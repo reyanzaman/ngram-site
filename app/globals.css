@@ -1,15 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;1,100;1,300;1,400;1,500;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Julius+Sans+One&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Scrollbar */
+/* width */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #3e553e;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #74a274;
+  border-radius: 2px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #74a274;
+}
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #141a17;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #141a17;
     --foreground: #ededed;
   }
 }
@@ -17,5 +43,5 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Roboto, Helvetica;
 }
