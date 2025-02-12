@@ -107,7 +107,7 @@ export default function Home() {
 
         {/* Details */}
 
-        <div className="lg:mt-10 mt-8 lg:mb-8 mb-6 items-start w-full">
+        <div className="lg:mt-2 mt-6 lg:mb-8 mb-6 items-start w-full">
           <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500"></hr>
           <h1 className="lg:text-2xl text-xl font-julius-sans font-bold lg:pt-3 pt-1">Details of selected Ayat</h1>
           <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500"></hr>
