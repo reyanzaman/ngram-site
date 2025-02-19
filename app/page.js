@@ -35,7 +35,7 @@ export default function Home() {
 
   const renderBiGramContent = () => (
     <>
-      <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-100">Bi-Gram</h3>
+      <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-100">Primary Theme</h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div className="rounded lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           <ul className="">
@@ -71,7 +71,7 @@ export default function Home() {
   const renderTriGramContent = () => (
     <>
       <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-600">
-        Tri-Gram
+        Sub-Themes
       </h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div className="lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
@@ -88,7 +88,7 @@ export default function Home() {
 
   const renderFourGramContent = () => (
     <>
-      <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-600">Four-Gram</h3>
+      <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-600">Thematic Topics</h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div className="lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           <h1>الرحمن الم</h1>
@@ -102,7 +102,7 @@ export default function Home() {
 
   const renderFiveGramContent = () => (
     <>
-      <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-600">Five-Gram</h3>
+      <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-600">Thematic Context</h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div className="lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           <h1>الرحيم الرحمن</h1>
@@ -137,8 +137,8 @@ export default function Home() {
   return (
     <div className="items-center justify-items-center min-h-screen lg:px-8 md:px-6 px-6 lg:pt-10 md:pt-8 pt-7 gap-16">
       <header className="w-full">
-        <h1 className="font-julius-sans lg:text-4xl md:text-4xl text-3xl text-center font-bold">N-Gram Searching</h1>
-        <h3 className="font-julius-sans lg:text-xl md:text-lg text-base text-center">on the Holy Quran</h3>
+        <h1 className="font-julius-sans lg:text-4xl md:text-3xl text-2xl text-center font-bold">Thematic Text-Pattern Searching</h1>
+        <h3 className="font-julius-sans lg:text-2xl md:text-xl text-base text-center">for Al-Qur'an</h3>
         <hr className="w-full lg:my-6 my-3 border-zinc-400"></hr>
       </header>
 
@@ -190,27 +190,27 @@ export default function Home() {
 
         <div className="lg:py-8 py-4 w-full">
           <div>
-            <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-300">Search Result (Ayats Found: 2)</h3>
+            <h3 className="lg:text-left text-center font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-300">Search Result (Ayats Found: 2)</h3>
             <div className="bg-[#1f2624] shadow-md rounded py-3">
               <div className="lg:px-4 px-3 lg:h-[20rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
                 <div className="grid grid-cols-3 lg:gap-4 gap-2">
                   <div className="col-span-2">
-                    <p className="font-bold lg:text-xl text-base">Ayat</p>
+                    <p className="font-bold lg:text-xl text-sm">Ayat</p>
                     <hr className="w-full my-1 border-[#4a504e]"></hr>
                     <ul>
-                      <li className="py-1 font-arabic text-green-200 lg:text-xl text-base">بسم الله الرحمن الرحيم</li>
+                      <li className="py-1 font-arabic text-green-200 lg:text-xl text-sm">بسم الله الرحمن الرحيم</li>
                       <hr className="w-full my-1 border-[#3a403e]"></hr>
-                      <li className="py-1 font-arabic lg:text-xl text-base">يا ايها الذين امنوا</li>
+                      <li className="py-1 font-arabic lg:text-xl text-sm">يا ايها الذين امنوا</li>
                       <hr className="w-full my-1 border-[#3a403e]"></hr>
                     </ul>
                   </div>
                   <div>
-                    <p className="font-bold lg:text-xl text-base text-center">Count</p>
+                    <p className="font-bold lg:text-xl text-sm text-center">Count</p>
                     <hr className="w-full my-1 border-[#4a504e]"></hr>
                     <ul className="text-center">
-                      <li className="py-1 text-green-200 lg:text-xl text-base">1</li>
+                      <li className="py-1 text-green-200 lg:text-xl text-sm">1</li>
                       <hr className="w-full my-1 border-[#3a403e]"></hr>
-                      <li className="py-1 lg:text-xl text-base">2</li>
+                      <li className="py-1 lg:text-xl text-sm">2</li>
                       <hr className="w-full my-1 border-[#3a403e]"></hr>
                     </ul>
                   </div>
@@ -227,12 +227,12 @@ export default function Home() {
           <h1 className="lg:text-xl text-lg font-julius-sans font-bold lg:pt-3 pt-1">Details of selected Ayat</h1>
           <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500"></hr>
           <div className="grid lg:grid-cols-2 grid-cols-1 pt-2 lg:gap-y-3 gap-y-3 gap-x-8">
-            <p className="lg:text-lg text-sm font-arabic"><b className="font-julius-sans">Selected N-Gram:</b> الله الرحمن</p>
-            <p className="lg:text-lg text-sm font-julius-sans"><b>Surah Name:</b> ABC</p>
-            <p className="lg:text-lg text-sm font-julius-sans"><b>Ayat Number</b>: 1</p>
-            <p className="lg:text-lg text-sm font-julius-sans"><b>No. of Occurences:</b> 2</p>
-            <p className="lg:text-lg text-sm font-julius-sans"><b>Ayat Translation:</b> In the name of Allah, the Entirely Merciful, the Especially Merciful.</p>
-            <p className="lg:text-lg text-sm font-arabic"><b className="font-julius-sans">Ayat Text:</b> بسم الله الرحمن الرحيم</p>
+            <p className="lg:text-lg text-sm font-arabic"><b className="font-julius-sans">Selected N-Gram : </b>الله الرحمن</p>
+            <p className="lg:text-lg text-sm font-julius-sans"><b>Surah Name : </b>Yusuf - Prophet Joseph (12)</p>
+            <p className="lg:text-lg text-sm font-julius-sans"><b>Ayat Number : </b>1</p>
+            <p className="lg:text-lg text-sm font-julius-sans"><b>No. of Occurences : </b> 2</p>
+            <p className="lg:text-lg text-sm font-julius-sans"><b>Ayat Translation : </b> In the name of Allah, the Entirely Merciful, the Especially Merciful.</p>
+            <p className="lg:text-lg text-sm font-arabic"><b className="font-julius-sans">Ayat Text : </b> بسم الله الرحمن الرحيم</p>
 
           </div>
         </div>
