@@ -233,7 +233,23 @@ export default function Home() {
             <p className="lg:text-lg text-sm font-julius-sans"><b>No. of Occurences : </b> 2</p>
             <p className="lg:text-lg text-sm font-julius-sans"><b>Ayat Translation : </b> In the name of Allah, the Entirely Merciful, the Especially Merciful.</p>
             <p className="lg:text-lg text-sm font-arabic"><b className="font-julius-sans">Ayat Text : </b> بسم الله الرحمن الرحيم</p>
+          </div>
+        </div>
 
+        <div className='w-full'>
+          <div className='flex flex-row items-start lg:gap-8 gap-6'>
+            <div className=''>
+              <p className="lg:text-lg text-sm font-bold">Before</p>
+              <p className="lg:text-lg text-sm font-arabic">الرحيم</p>
+            </div>
+            <div>
+              <p className="lg:text-lg text-sm font-bold">Selected Pattern</p>
+              <p className="lg:text-lg text-sm font-arabic text-green-200">الله الرحمن</p>
+            </div>
+            <div>
+              <p className="lg:text-lg text-sm font-bold">After</p>
+              <p className="lg:text-lg text-sm font-arabic">بسم</p>
+            </div>
           </div>
         </div>
 
