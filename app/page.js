@@ -227,7 +227,7 @@ export default function Home() {
           <h1 className="lg:text-xl text-lg font-julius-sans font-bold lg:pt-3 pt-1">Details of selected Ayat</h1>
           <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500"></hr>
           <div className="grid lg:grid-cols-2 grid-cols-1 pt-2 lg:gap-y-3 gap-y-3 gap-x-8">
-            <p className="lg:text-lg text-sm font-arabic"><b className="font-julius-sans">Selected N-Gram : </b>الله الرحمن</p>
+            <p className="lg:text-lg text-sm font-arabic"><b className="font-julius-sans">Selected Pattern : </b>الله الرحمن</p>
             <p className="lg:text-lg text-sm font-julius-sans"><b>Surah Name : </b>Yusuf - Prophet Joseph (12)</p>
             <p className="lg:text-lg text-sm font-julius-sans"><b>Ayat Number : </b>1</p>
             <p className="lg:text-lg text-sm font-julius-sans"><b>No. of Occurences : </b> 2</p>

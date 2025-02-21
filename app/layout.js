@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "N-Gram Searching",
-  description: "PhD Project of Nazia Nishat",
+  title: "Thematic Searching",
+  description: "Thematic Searching For Al-Qur'an",
 };
 
 export default function RootLayout({ children }) {
