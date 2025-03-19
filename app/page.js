@@ -264,7 +264,7 @@ export default function Home() {
                     className={`${openIndex === index ? "text-green-200" : "text-gray-200"}`}
                     onClick={() => toggleSublist(index, topic)}
                   >
-                    {topic.topic_text} - {topic.id}
+                    {topic.topic_text}
                   </div>
                   <hr className="w-full my-1 border-[#3a403e]" />
                   {openIndex === index && (
