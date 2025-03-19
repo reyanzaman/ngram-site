@@ -31,7 +31,7 @@ export default function Populate() {
 
         try {
             // const res = await fetch("/api/populate//upload-primary-topics", {
-            // const res = await fetch("/api/populate//upload-bi-grams", {
+            const res = await fetch("/api/populate//upload-bi-grams", {
             // const res = await fetch("/api/populate/upload-tri-grams", {
             // const res = await fetch("/api/populate//upload-four-grams", {
             // const res = await fetch("/api/populate//upload-five-grams", {
@@ -44,7 +44,7 @@ export default function Populate() {
             // const res = await fetch("/api/populate/upload-bi-gram-portions", {
             // const res = await fetch("/api/populate/upload-tri-gram-portions", {
             // const res = await fetch("/api/populate/upload-four-gram-portions", {
-            const res = await fetch("/api/populate/upload-five-gram-portions", {
+            // const res = await fetch("/api/populate/upload-five-gram-portions", {
                 method: "POST",
                 body: formData,
             });
@@ -71,7 +71,7 @@ export default function Populate() {
 
 
             {/* <h3 className="text-xl">Primary Topic CSV Populate</h3> */}
-            {/* <h3 className="text-xl">Bi Gram CSV Populate</h3> */}
+            <h3 className="text-xl">Bi Gram CSV Populate</h3>
             {/* <h3 className="text-xl">Tri Gram CSV Populate</h3> */}
             {/* <h3 className="text-xl">Four Gram CSV Populate</h3> */}
             {/* <h3 className="text-xl">Five Gram CSV Populate</h3> */}
@@ -84,7 +84,7 @@ export default function Populate() {
             {/* <h3 className="text-xl">Bi Gram Portions</h3> */}
             {/* <h3 className="text-xl">Tri Gram Portions</h3> */}
             {/* <h3 className="text-xl">Four Gram Portions</h3> */}
-            <h3 className="text-xl">Five Gram Portions</h3>
+            {/* <h3 className="text-xl">Five Gram Portions</h3> */}
 
             {/* File Input */}
             <input
