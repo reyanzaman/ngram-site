@@ -2,32 +2,25 @@ import { NextResponse } from "next/server";
 import DbUtils from "@/app/api/database/db"
 import { pool } from "@/app/api/database/db";
 
-export async function POST(req) {
+export async function GET(req) {
     try {
-        const { biGrams } = await req.json(); // Extract bi_gram IDs from request body
-
-        if (!biGrams || !Array.isArray(biGrams) || biGrams.length === 0) {
-            return NextResponse.json({ error: "At least one bi_gram is required" }, { status: 400 });
-        }
-
         // Check database connection
         const isDbConnected = await DbUtils.checkConnection();
         if (!isDbConnected) {
             return NextResponse.json({ error: "Failed to connect to the database" }, { status: 500 });
         }
 
-        // SQL query for retrieving bi-grams
-        const placeholders = biGrams.map((_, index) => `$${index + 1}`).join(", ");
-        const getQuery = `SELECT * FROM bi_grams WHERE id IN (${placeholders});`;
+        // SQL query for retrieving data
+        const getQuery = `SELECT * FROM primary_topics_link_bi_grams;`;
 
         const client = await pool.connect();
         try {
             console.log("Starting database transaction...");
-            const result = await client.query(getQuery, biGrams);
-            const themes = result.rows;
+            const result = await client.query(getQuery);
+            const links = result.rows;
 
-            console.log("Primary Themes retrieved successfully!");
-            return NextResponse.json({ themes });
+            console.log("Primary Topics Links retrieved successfully!");
+            return NextResponse.json({ links });
         } catch (error) {
             console.error("Error fetching data:", error);
             return NextResponse.json({ error: "Error fetching data" }, { status: 500 });
@@ -35,7 +28,7 @@ export async function POST(req) {
             client.release();
         }
     } catch (error) {
-        console.error("Error processing request:", error);
+        console.error("Error processing file:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

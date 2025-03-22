@@ -31,7 +31,7 @@ export default function Populate() {
 
         try {
             // const res = await fetch("/api/populate//upload-primary-topics", {
-            const res = await fetch("/api/populate//upload-bi-grams", {
+            const res = await fetch("/api/populate//upload-topic-link-bigrams", {
             // const res = await fetch("/api/populate/upload-tri-grams", {
             // const res = await fetch("/api/populate//upload-four-grams", {
             // const res = await fetch("/api/populate//upload-five-grams", {
@@ -71,7 +71,8 @@ export default function Populate() {
 
 
             {/* <h3 className="text-xl">Primary Topic CSV Populate</h3> */}
-            <h3 className="text-xl">Bi Gram CSV Populate</h3>
+            <h3 className="text-xl">Primary Topics Link BiGram CSV Populate</h3>
+            {/* <h3 className="text-xl">Bi Gram CSV Populate</h3> */}
             {/* <h3 className="text-xl">Tri Gram CSV Populate</h3> */}
             {/* <h3 className="text-xl">Four Gram CSV Populate</h3> */}
             {/* <h3 className="text-xl">Five Gram CSV Populate</h3> */}

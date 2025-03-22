@@ -21,6 +21,7 @@ export default function Home() {
   const [gramState, setGramState] = React.useState('bi-gram');
 
   const [primaryTopics, setPrimaryTopics] = useState([]);
+  const [oneGramsLinkBiGrams, setOneGramsLinkBiGrams] = useState([]);
   const [primaryThemes, setPrimaryThemes] = useState([]);
   const [subThemes, setSubThemes] = useState([]);
   const [thematicTopics, setThematicTopics] = useState([]);
@@ -66,7 +67,40 @@ export default function Home() {
       }
     };
 
+    const fetchtopiclinktheme = async () => {
+      setLoading(true);
+      const cachedData = localStorage.getItem('topic-link-bigram');
+
+      // If data is cached, use it
+      if (cachedData) {
+        setOneGramsLinkBiGrams(JSON.parse(cachedData));
+        setLoading(false);
+        return;
+      }
+
+      // Otherwise, fetch from API
+      try {
+        const res = await fetch("/api/get/primary-topics-link-bi-grams", {
+          method: "GET",
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          setOneGramsLinkBiGrams(data.links);
+          // Cache the fetched data in localStorage for future use
+          localStorage.setItem('topic-link-bigram', JSON.stringify(data.links));
+        } else {
+          console.error(data.error || "Error retrieving data.");
+        }
+      } catch (error) {
+        console.error("Frontend Topic Link BiGram Fetching Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchPrimaryTopics();
+    fetchtopiclinktheme();
   }, []);
 
   // Toggle One Gram
@@ -77,7 +111,7 @@ export default function Home() {
       setOpenIndex(null);
     } else {
       const isSameIndex = openIndex === index;
-  
+
       if (isSameIndex) {
         // Deselect the topic if it's the same
         setSelectedTopic(null);
@@ -89,7 +123,7 @@ export default function Home() {
         fetchPrimaryThemes(topic.id); // Ensure topic is valid before calling this
       }
     }
-  
+
     // Reset other states to clear selections
     setSelectedTheme(null);
     setSelectedSubTheme(null);
@@ -105,8 +139,26 @@ export default function Home() {
   const fetchPrimaryThemes = async (topicId) => {
     setLoadingThemes(true);
     try {
-      const res = await fetch(`/api/get/primary-themes?topic=${topicId}`);
+      const linkedBiGrams = oneGramsLinkBiGrams
+        .filter(link => link.topic_id === topicId)
+        .map(link => link.bi_gram_id);
+
+      if (linkedBiGrams.length === 0) {
+        console.warn("No linked bi-grams found for topic:", topicId);
+        setPrimaryThemes([]);
+        setLoadingThemes(false);
+        return;
+      }
+
+      // Use POST request with JSON body
+      const res = await fetch(`/api/get/primary-themes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ biGrams: linkedBiGrams })
+      });
+
       const data = await res.json();
+
       if (res.ok) {
         setPrimaryThemes(data.themes);
       } else {
@@ -255,50 +307,45 @@ export default function Home() {
       </h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div className="rounded lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
-          <ul>
-            {primaryTopics.map((topic, index) => (
-              // Only show the topic if it's the selected one or if no topic is selected
-              (openIndex === null || openIndex === index) && (
-                <li key={index} className="py-1 cursor-pointer">
-                  <div
-                    className={`${openIndex === index ? "text-green-200" : "text-gray-200"}`}
-                    onClick={() => toggleSublist(index, topic)}
-                  >
-                    {topic.topic_text}
-                  </div>
-                  <hr className="w-full my-1 border-[#3a403e]" />
-                  {openIndex === index && (
-                    <ul className="mt-1 text-gray-400">
-                      {loadingThemes ? (
-                        <div>
+          {primaryTopics.length === 0 ? (
+            <p className="text-gray-500">Loading Primary Topics</p>
+          ) : (
+            <ul>
+              {primaryTopics.map((topic, index) =>
+                (openIndex === null || openIndex === index) && (
+                  <li key={index} className="py-1 cursor-pointer">
+                    <div
+                      className={`${openIndex === index ? "text-green-200" : "text-gray-200"}`}
+                      onClick={() => toggleSublist(index, topic)}
+                    >
+                      {topic.topic_text}
+                    </div>
+                    <hr className="w-full my-1 border-[#3a403e]" />
+                    {openIndex === index && (
+                      <ul className="mt-1 text-gray-400">
+                        {loadingThemes ? (
                           <li className="text-gray-500">Loading primary themes...</li>
-                          <hr className="w-full mx-auto my-1 border-[#3a403e]" />
-                        </div>
-                      ) : (
-                        primaryThemes.length > 0 ? (
-                          <>
-                            {primaryThemes.map((theme, subIndex) => (
-                              <li
-                                key={`${index}-${subIndex}`}
-                                className={`${subOpenIndex === subIndex ? "text-green-200 py-1" : "text-gray-200 py-1"}`}
-                                onClick={() => toggleSubThemes(subIndex, theme)}
-                              >
-                                {theme.bi_gram_text}
-                                <hr className="w-1/2 mx-auto my-1 border-[#3a403e]" />
-                              </li>
-                            ))}
-                            <hr className="w-full mx-auto my-1 border-[#3a403e]" />
-                          </>
+                        ) : primaryThemes.length > 0 ? (
+                          primaryThemes.map((theme, subIndex) => (
+                            <li
+                              key={`${index}-${subIndex}`}
+                              className={`${subOpenIndex === subIndex ? "text-green-200 py-1" : "text-gray-200 py-1"}`}
+                              onClick={() => toggleSubThemes(subIndex, theme)}
+                            >
+                              {theme.bi_gram_text}
+                              <hr className="w-1/2 mx-auto my-1 border-[#3a403e]" />
+                            </li>
+                          ))
                         ) : (
                           <li className="text-gray-500">No themes available</li>
-                        )
-                      )}
-                    </ul>
-                  )}
-                </li>
-              )
-            ))}
-          </ul>
+                        )}
+                      </ul>
+                    )}
+                  </li>
+                )
+              )}
+            </ul>
+          )}
         </div>
       </div>
     </>
@@ -312,9 +359,9 @@ export default function Home() {
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div className="lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           {selectedTheme ? (
-            <ul>
-              {subThemes.length > 0 ? (
-                subThemes.map((theme, index) => (
+            subThemes.length > 0 ? (
+              <ul>
+                {subThemes.map((theme, index) => (
                   <li key={index} className="py-1 cursor-pointer">
                     <div
                       className={`${thematicOpenIndex === index ? "text-green-200" : "text-gray-200"}`}
@@ -324,15 +371,13 @@ export default function Home() {
                     </div>
                     <hr className="w-full my-1 border-[#3a403e]" />
                   </li>
-                ))
-              ) : (
-                <li className="text-gray-500">Loading sub-themes</li>
-              )}
-            </ul>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500">No sub-themes available</p>
+            )
           ) : (
-            <div>
-              <p className="text-gray-500">Select a primary theme to view sub-themes</p>
-            </div>
+            <p className="text-gray-500">Select a primary theme to view sub-themes</p>
           )}
         </div>
       </div>
@@ -345,9 +390,9 @@ export default function Home() {
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div className="lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           {selectedSubTheme ? (
-            <ul>
-              {thematicTopics.length > 0 ? (
-                thematicTopics.map((thematicTopic, index) => (
+            thematicTopics.length > 0 ? (
+              <ul>
+                {thematicTopics.map((thematicTopic, index) => (
                   <li key={index} className="py-1 cursor-pointer">
                     <div
                       className={`${contextOpenIndex === index ? "text-green-200" : "text-gray-200"}`}
@@ -357,15 +402,13 @@ export default function Home() {
                     </div>
                     <hr className="w-full my-1 border-[#3a403e]" />
                   </li>
-                ))
-              ) : (
-                <li className="text-gray-500">Loading thematic topics</li>
-              )}
-            </ul>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500">No thematic topics available</p>
+            )
           ) : (
-            <div>
-              <p className="text-gray-500">Select a sub-theme to view thematic topics</p>
-            </div>
+            <p className="text-gray-500">Select a sub-theme to view thematic topics</p>
           )}
         </div>
       </div>
@@ -378,9 +421,9 @@ export default function Home() {
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div className="lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           {selectedThematicTopic ? (
-            <ul>
-              {thematicContexts.length > 0 ? (
-                thematicContexts.map((thematicContext, index) => (
+            thematicContexts.length > 0 ? (
+              <ul>
+                {thematicContexts.map((thematicContext, index) => (
                   <li key={index} className="py-1 cursor-pointer">
                     <div
                       className={`${fiveGramOpenIndex === index ? "text-green-200" : "text-gray-200"}`}
@@ -390,15 +433,13 @@ export default function Home() {
                     </div>
                     <hr className="w-full my-1 border-[#3a403e]" />
                   </li>
-                ))
-              ) : (
-                <li className="text-gray-500">Loading thematic contexts</li>
-              )}
-            </ul>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500">No thematic contexts available</p>
+            )
           ) : (
-            <div>
-              <p className="text-gray-500">Select a thematic topic to view thematic contexts</p>
-            </div>
+            <p className="text-gray-500">Select a thematic topic to view thematic contexts</p>
           )}
         </div>
       </div>
