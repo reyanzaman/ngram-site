@@ -143,6 +143,7 @@ export default function Home() {
           body: JSON.stringify({ level, id: gram.id }),
         });
         const data = await res.json();
+        console.log(data);
         setAyats(data.ayats || []);
       } catch (e) {
         console.error("Error fetching ayats", e);
@@ -162,16 +163,27 @@ export default function Home() {
 
       // Determine the highest-order selected n-gram
       let selectedPatternType = null;
-      if (selectedThematicContext) selectedPatternType = "five_grams";
-      else if (selectedThematicTopic) selectedPatternType = "four_grams";
-      else if (selectedSubTheme) selectedPatternType = "tri_grams";
-      else if (selectedTheme) selectedPatternType = "bi_grams";
+      let selectedPatternId = null;
+
+      if (selectedThematicContext) {
+        selectedPatternType = "five_grams";
+        selectedPatternId = selectedThematicContext.id;
+      } else if (selectedThematicTopic) {
+        selectedPatternType = "four_grams";
+        selectedPatternId = selectedThematicTopic.id;
+      } else if (selectedSubTheme) {
+        selectedPatternType = "tri_grams";
+        selectedPatternId = selectedSubTheme.id;
+      } else if (selectedTheme) {
+        selectedPatternType = "bi_grams";
+        selectedPatternId = selectedTheme.id;
+      }
 
       setLoadingDetails(true);
       try {
-        const ayatText = ayats[selectedAyatIndex];
+        const selectedAyatId = ayats[selectedAyatIndex].id;
         const res = await fetch(
-          `/api/get/ayat-details?text=${encodeURIComponent(ayatText)}&ngram=${selectedPatternType}`
+          `/api/get/ayat-details?ngram=${selectedPatternType}&ngramId=${selectedPatternId}&ayatId=${selectedAyatId}`
         );
         const data = await res.json();
         setAyatDetails(data.details || []);
@@ -693,6 +705,8 @@ export default function Home() {
 
               {/* Result */}
               <div className='w-full pt-2'>
+
+                {/* Selected Pattern */}
                 <div className='lg:mt-6 mt-4 lg:mb-0 mb-4'>
                   <hr className="w-full my-1 border-[#4a504e]" />
                   <h1 className='lg:text-left text-center lg:text-xl sm:text-sm font-bold py-4'>
@@ -712,6 +726,7 @@ export default function Home() {
                   <hr className="w-full my-1 border-[#4a504e]" />
                 </div>
 
+                {/* Ayat List */}
                 <div className="lg:py-8 py-4">
                   <div>
                     <h3 className="lg:text-left text-center font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-300">
@@ -735,23 +750,33 @@ export default function Home() {
                               ) : ayats.length === 0 ? (
                                 <p className="text-zinc-400 py-2">No Ayats found for the selected topic.</p>
                               ) : (
-                                ayats.map((text, idx) => (
-                                  <div
-                                    key={idx}
-                                    onClick={() => {
-                                      setAyatDetails(null); // clear before loading new
-                                      setSelectedAyatIndex(prev => (prev === idx ? null : idx));
-                                    }}
-                                    className={`cursor-pointer rounded ${selectedAyatIndex === idx ? "bg-[#2c3533] text-green-200" : ""
-                                      }`}
-                                  >
-                                    <li className={`py-2 font-arabic lg:text-xl text-sm ${selectedAyatIndex !== idx ? "text-zinc-200" : ""
-                                      }`}>
-                                      <span className="text-zinc-400 mr-2">{idx + 1}.</span> {text}
-                                    </li>
-                                    <hr className="w-full my-1 border-[#3a403e]" />
-                                  </div>
-                                ))
+                                ayats.map((ayat, idx) => {
+                                  // Check if ayat is an object and it has the expected properties
+                                  if (ayat && ayat.ayat_arabic_text) {
+                                    return (
+                                      <div
+                                        key={ayat.id}
+                                        onClick={() => {
+                                          setAyatDetails(null); // Clear before loading new
+                                          setSelectedAyatIndex(prev => (prev === idx ? null : idx));
+                                        }}
+                                        className={`cursor-pointer rounded ${selectedAyatIndex === idx ? "bg-[#2c3533] text-green-200" : ""}`}
+                                      >
+                                        <li className={`py-2 font-arabic lg:text-xl text-sm ${selectedAyatIndex !== idx ? "text-zinc-200" : ""}`}>
+                                          <span className="text-zinc-400 mr-2">{idx + 1}.</span> {ayat.ayat_arabic_text}
+                                        </li>
+                                        <hr className="w-full my-1 border-[#3a403e]" />
+                                      </div>
+                                    );
+                                  } else {
+                                    // If ayat doesn't have the required properties, display a fallback message
+                                    return (
+                                      <div key={idx} className="py-2 font-arabic lg:text-xl text-sm text-zinc-400">
+                                        Invalid Ayat Data
+                                      </div>
+                                    );
+                                  }
+                                })
                               )}
                             </ul>
                           </div>
@@ -760,6 +785,7 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+
               </div>
 
               {/* Details */}
@@ -778,7 +804,7 @@ export default function Home() {
                       <p className="lg:text-lg text-sm">
                         <b className="font-julius-sans">Selected Ayat : </b>
                         {selectedAyatIndex !== null && ayats[selectedAyatIndex] ? (
-                          <span className="font-arabic">{ayats[selectedAyatIndex]}</span>
+                          <span className="font-arabic">{ayats[selectedAyatIndex]?.ayat_arabic_text}</span>
                         ) : (
                           <span className="font-julius-sans"></span>
                         )}

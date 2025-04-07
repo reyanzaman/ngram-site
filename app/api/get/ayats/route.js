@@ -51,10 +51,10 @@ export async function POST(req) {
       }
 
       const placeholders = ayatIds.map((_, i) => `$${i + 1}`).join(", ");
-      const ayatQuery = `SELECT ayat_arabic_text FROM ayats WHERE id IN (${placeholders})`;
+      const ayatQuery = `SELECT id, ayat_arabic_text FROM ayats WHERE id IN (${placeholders})`;
       const ayatResult = await client.query(ayatQuery, ayatIds);
 
-      const ayats = ayatResult.rows.map(row => row.ayat_arabic_text);
+      const ayats = ayatResult.rows;
       return NextResponse.json({ ayats });
     } catch (error) {
       console.error("Error fetching ayats:", error);

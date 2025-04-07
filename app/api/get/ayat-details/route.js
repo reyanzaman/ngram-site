@@ -3,17 +3,18 @@ import { pool } from "@/app/api/database/db";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const text = searchParams.get("text");
-  const ngram = searchParams.get("ngram"); // one of: bi_gram, tri_gram, four_gram, five_gram
+  const ayatId = searchParams.get("ayatId");
+  const ngram = searchParams.get("ngram"); // one of: bi_grams, tri_grams, etc.
+  const ngramId = searchParams.get("ngramId");
 
-  if (!text) {
-    return NextResponse.json({ error: "Text is required" }, { status: 400 });
+  if (!ayatId || !ngram || !ngramId) {
+    return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
   }
 
   try {
-    // Step 1: Get Ayat by Arabic text
-    const getAyatQuery = `SELECT * FROM ayats WHERE ayat_arabic_text = $1`;
-    const ayatRes = await pool.query(getAyatQuery, [text]);
+    // Step 1: Get Ayat by ID
+    const getAyatQuery = `SELECT * FROM ayats WHERE id = $1`;
+    const ayatRes = await pool.query(getAyatQuery, [ayatId]);
     const ayat = ayatRes.rows[0];
 
     if (!ayat) {
@@ -29,20 +30,26 @@ export async function GET(req) {
       return NextResponse.json({ error: "Surah not found" }, { status: 404 });
     }
 
-    // Step 3: Get before/after portions from the correct n-gram portions table
+    // Step 3: Get before/after from correct portions table using composite key
+    const table = `${ngram}_portions`; // e.g., tri_grams_portions
+    const ngramIdField = `${ngram.slice(0, -1)}_id`; // e.g., tri_gram_id
+
+    const portionQuery = `
+      SELECT left_portion, right_portion 
+      FROM ${table} 
+      WHERE ayat_id = $1 AND ${ngramIdField} = $2 
+      LIMIT 1
+    `;
+    const portionRes = await pool.query(portionQuery, [ayatId, ngramId]);
+
     let before = null;
     let after = null;
-
-    if (ngram) {
-      const table = `${ngram}_portions`; // e.g., tri_gram_portions
-      const query = `SELECT left_portion, right_portion FROM ${table} WHERE ayat_id = $1 LIMIT 1`;
-      const portionRes = await pool.query(query, [ayat.id]);
-      if (portionRes.rows.length > 0) {
-        before = portionRes.rows[0].left_portion;
-        after = portionRes.rows[0].right_portion;
-      }
+    if (portionRes.rows.length > 0) {
+      before = portionRes.rows[0].left_portion;
+      after = portionRes.rows[0].right_portion;
     }
 
+    // Final response
     const details = {
       ayatText: ayat.ayat_arabic_text,
       translation: ayat.ayat_english_text,
