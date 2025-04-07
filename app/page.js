@@ -852,7 +852,7 @@ export default function Home() {
                 {/* Before, Selected Pattern, After Section */}
                 <div className="">
                   <div className="flex flex-row items-start lg:gap-8 gap-6">
-                    <div>
+                    <div className='lg:max-w-[250px] max-w-[100px]'>
                       <p className="lg:text-lg text-sm font-bold">Before</p>
                       <p className="lg:text-lg text-sm font-arabic">
                         {selectedAyatIndex !== null
@@ -862,7 +862,7 @@ export default function Home() {
                           : ""}
                       </p>
                     </div>
-                    <div>
+                    <div className='lg:max-w-[250px] max-w-[100px]'>
                       <p className="lg:text-lg text-sm font-bold">Selected Pattern</p>
                       <p className="lg:text-lg text-sm font-arabic text-green-200">
                         {selectedAyatIndex !== null ? (
@@ -882,7 +882,7 @@ export default function Home() {
                         )}
                       </p>
                     </div>
-                    <div>
+                    <div className='lg:max-w-[250px] max-w-[100px]'>
                       <p className="lg:text-lg text-sm font-bold">After</p>
                       <p className="lg:text-lg text-sm font-arabic">
                         {selectedAyatIndex !== null
