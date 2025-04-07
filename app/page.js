@@ -737,7 +737,7 @@ export default function Home() {
                           : `Search Result (Ayats Found: ${ayats.length})`}
                     </h3>
                     <div className="bg-[#1f2624] shadow-md rounded py-3">
-                      <div className="lg:px-4 px-3 lg:h-[20rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
+                      <div className="lg:px-4 px-3 lg:h-[25rem] h-[15rem] text-zinc-200 overflow-auto lg:text-lg text-base">
                         <div className="lg:py-2 lg:px-4">
                           <div className="">
                             <p className="font-bold lg:text-xl text-sm">Ayats</p>
@@ -764,6 +764,7 @@ export default function Home() {
                                       >
                                         <li className={`py-2 font-arabic lg:text-xl text-sm ${selectedAyatIndex !== idx ? "text-zinc-200" : ""}`}>
                                           <span className="text-zinc-400 mr-2">(Ayat-{ayat.ayat_no} | Surah-{ayat.surah_id}) </span> {ayat.ayat_arabic_text}
+                                          <p className="text-zinc-400 mr-2">[{ayat.ayat_english_text}]</p>
                                         </li>
                                         <hr className="w-full my-1 border-[#3a403e]" />
                                       </div>
