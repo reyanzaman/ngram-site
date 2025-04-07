@@ -51,7 +51,7 @@ export async function POST(req) {
       }
 
       const placeholders = ayatIds.map((_, i) => `$${i + 1}`).join(", ");
-      const ayatQuery = `SELECT id, ayat_arabic_text FROM ayats WHERE id IN (${placeholders})`;
+      const ayatQuery = `SELECT * FROM ayats WHERE id IN (${placeholders})`;
       const ayatResult = await client.query(ayatQuery, ayatIds);
 
       const ayats = ayatResult.rows;

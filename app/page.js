@@ -763,7 +763,7 @@ export default function Home() {
                                         className={`cursor-pointer rounded ${selectedAyatIndex === idx ? "bg-[#2c3533] text-green-200" : ""}`}
                                       >
                                         <li className={`py-2 font-arabic lg:text-xl text-sm ${selectedAyatIndex !== idx ? "text-zinc-200" : ""}`}>
-                                          <span className="text-zinc-400 mr-2">{idx + 1}.</span> {ayat.ayat_arabic_text}
+                                          <span className="text-zinc-400 mr-2">(Ayat-{ayat.ayat_no} | Surah-{ayat.surah_id}) </span> {ayat.ayat_arabic_text}
                                         </li>
                                         <hr className="w-full my-1 border-[#3a403e]" />
                                       </div>
