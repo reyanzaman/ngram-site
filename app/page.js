@@ -235,6 +235,7 @@ export default function Home() {
 
     // If it's the same index, deselect it and reset higher levels
     if (isSameIndex) {
+      setSelectedAyatIndex(null);
       setSubOpenIndex(null);
       setSelectedTheme(null);
       setSelectedSubTheme(null);
@@ -271,6 +272,7 @@ export default function Home() {
 
     // If it's the same index, deselect it and reset higher levels
     if (isSameIndex) {
+      setSelectedAyatIndex(null);
       setThematicOpenIndex(null);
       setSelectedSubTheme(null);
       setSelectedThematicTopic(null);
@@ -303,6 +305,7 @@ export default function Home() {
 
     // If it's the same index, deselect it and reset higher levels
     if (isSameIndex) {
+      setSelectedAyatIndex(null);
       setContextOpenIndex(null);
       setSelectedThematicTopic(null);
       setSelectedThematicContext(null);
@@ -331,6 +334,7 @@ export default function Home() {
 
     // If it's the same index, deselect it and reset higher levels
     if (isSameIndex) {
+      setSelectedAyatIndex(null);
       setAyatDetails(null);
       setfiveGramOpenIndex(null);
       setSelectedThematicContext(null);
@@ -705,24 +709,50 @@ export default function Home() {
               {/* Result */}
               <div className='w-full pt-2'>
 
-                {/* Selected Pattern */}
-                <div className='lg:mt-6 mt-4 lg:mb-0 mb-4'>
-                  <hr className="w-full my-1 border-[#4a504e]" />
-                  <h1 className='lg:text-left text-center lg:text-xl sm:text-sm font-bold py-4'>
-                    Selected Pattern:{" "}
-                    <span className="block sm:inline font-normal">{  /* 'block' for small screens, 'inline' for larger screens */
-                      selectedThematicContext
-                        ? selectedThematicContext.five_gram_text // Display the five-gram text
-                        : selectedThematicTopic
-                          ? selectedThematicTopic.four_gram_text // Display the four-gram text
-                          : selectedSubTheme
-                            ? selectedSubTheme.tri_gram_text // Display the tri-gram text
-                            : selectedTheme
-                              ? selectedTheme.bi_gram_text // Display the bi-gram text
-                              : "None"
-                    }</span>
-                  </h1>
-                  <hr className="w-full my-1 border-[#4a504e]" />
+                {/* Before, Selected Pattern, After Section */}
+                <div className='w-full'>
+                  <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
+                  <div className="">
+                    <div className="flex flex-row justify-center lg:gap-4 gap-5">
+                      <div className='lg:w-[300px] w-[100px]'>
+                        <p className="lg:text-lg text-sm font-bold text-right">Before</p>
+                        <p className="lg:text-lg text-sm font-arabic text-right">
+                          {selectedAyatIndex !== null
+                            ? loadingDetails
+                              ? "Loading..."
+                              : ayatDetails?.before || "-"
+                            : "-"}
+                        </p>
+                      </div>
+                      <div className='lg:w-[300px] w-[100px] border-x-2 border-[#3a403e]'>
+                        <p className="lg:text-lg text-sm text-center font-bold">Selected Pattern</p>
+                        <p className="lg:text-lg text-sm text-center font-arabic text-green-200">
+                          <span className="block sm:inline font-normal">{  /* 'block' for small screens, 'inline' for larger screens */
+                            selectedThematicContext
+                              ? selectedThematicContext.five_gram_text // Display the five-gram text
+                              : selectedThematicTopic
+                                ? selectedThematicTopic.four_gram_text // Display the four-gram text
+                                : selectedSubTheme
+                                  ? selectedSubTheme.tri_gram_text // Display the tri-gram text
+                                  : selectedTheme
+                                    ? selectedTheme.bi_gram_text // Display the bi-gram text
+                                    : "None"
+                          }</span>
+                        </p>
+                      </div>
+                      <div className='lg:w-[300px] w-[100px]'>
+                        <p className="lg:text-lg text-sm font-bold">After</p>
+                        <p className="lg:text-lg text-sm font-arabic">
+                          {selectedAyatIndex !== null
+                            ? loadingDetails
+                              ? "Loading..."
+                              : ayatDetails?.after || "-"
+                            : "-"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
                 </div>
 
                 {/* Ayat List */}
@@ -788,101 +818,49 @@ export default function Home() {
 
               </div>
 
-              {/* Details */}
-              <div className='w-full'>
+              {/* Details of Selected Ayat */}
+              <div className="w-full">
+                <div className="lg:mt-2 mt-6 lg:mb-8 mb-6 items-start">
+                  <h1 className="lg:text-xl text-lg font-julius-sans font-bold lg:pt-3 pt-1">
+                    Details of selected Ayat
+                  </h1>
+                  <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
 
-                {/* Details of Selected Ayat */}
-                <div className="w-full">
-                  <div className="lg:mt-2 mt-6 lg:mb-8 mb-6 items-start">
-                    <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
-                    <h1 className="lg:text-xl text-lg font-julius-sans font-bold lg:pt-3 pt-1">
-                      Details of selected Ayat
-                    </h1>
-                    <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
-
-                    <div className="grid gap-y-2">
-                      <p className="lg:text-lg text-sm">
-                        <b className="font-julius-sans">Selected Ayat : </b>
-                        {selectedAyatIndex !== null && ayats[selectedAyatIndex] ? (
-                          <span className="font-arabic">{ayats[selectedAyatIndex]?.ayat_arabic_text}</span>
-                        ) : (
-                          <span className="font-julius-sans"></span>
-                        )}
-                      </p>
-                      <p className="lg:text-lg text-sm font-julius-sans">
-                        <b>Surah Name : </b>
-                        {selectedAyatIndex !== null
-                          ? loadingDetails
-                            ? "Loading..."
-                            : ayatDetails?.surahName || ""
-                          : ""}
-                      </p>
-                      <p className="lg:text-lg text-sm font-julius-sans">
-                        <b>Ayat Number : </b>
-                        {selectedAyatIndex !== null
-                          ? loadingDetails
-                            ? "Loading..."
-                            : ayatDetails?.ayatNumber || ""
-                          : ""}
-                      </p>
-                      <p className="lg:text-lg text-sm font-julius-sans">
-                        <b>Ayat Translation : </b>
-                        {selectedAyatIndex !== null
-                          ? loadingDetails
-                            ? "Loading..."
-                            : ayatDetails?.translation || ""
-                          : ""}
-                      </p>
-                    </div>
+                  <div className="grid gap-y-2">
+                    <p className="lg:text-lg text-sm">
+                      <b className="font-julius-sans">Selected Ayat : </b>
+                      {selectedAyatIndex !== null && ayats[selectedAyatIndex] ? (
+                        <span className="font-arabic">{ayats[selectedAyatIndex]?.ayat_arabic_text}</span>
+                      ) : (
+                        <span className="font-julius-sans"></span>
+                      )}
+                    </p>
+                    <p className="lg:text-lg text-sm font-julius-sans">
+                      <b>Surah Name : </b>
+                      {selectedAyatIndex !== null
+                        ? loadingDetails
+                          ? "Loading..."
+                          : ayatDetails?.surahName || ""
+                        : ""}
+                    </p>
+                    <p className="lg:text-lg text-sm font-julius-sans">
+                      <b>Ayat Number : </b>
+                      {selectedAyatIndex !== null
+                        ? loadingDetails
+                          ? "Loading..."
+                          : ayatDetails?.ayatNumber || ""
+                        : ""}
+                    </p>
+                    <p className="lg:text-lg text-sm font-julius-sans">
+                      <b>Ayat Translation : </b>
+                      {selectedAyatIndex !== null
+                        ? loadingDetails
+                          ? "Loading..."
+                          : ayatDetails?.translation || ""
+                        : ""}
+                    </p>
                   </div>
                 </div>
-
-                {/* Before, Selected Pattern, After Section */}
-                <div className="">
-                  <div className="flex flex-row items-start lg:gap-8 gap-6">
-                    <div className='lg:max-w-[250px] max-w-[100px]'>
-                      <p className="lg:text-lg text-sm font-bold">Before</p>
-                      <p className="lg:text-lg text-sm font-arabic">
-                        {selectedAyatIndex !== null
-                          ? loadingDetails
-                            ? "Loading..."
-                            : ayatDetails?.before || "-"
-                          : ""}
-                      </p>
-                    </div>
-                    <div className='lg:max-w-[250px] max-w-[100px]'>
-                      <p className="lg:text-lg text-sm font-bold">Selected Pattern</p>
-                      <p className="lg:text-lg text-sm font-arabic text-green-200">
-                        {selectedAyatIndex !== null ? (
-                          <span className="block sm:inline font-normal">
-                            {selectedThematicContext
-                              ? selectedThematicContext.five_gram_text
-                              : selectedThematicTopic
-                                ? selectedThematicTopic.four_gram_text
-                                : selectedSubTheme
-                                  ? selectedSubTheme.tri_gram_text
-                                  : selectedTheme
-                                    ? selectedTheme.bi_gram_text
-                                    : ""}
-                          </span>
-                        ) : (
-                          ""
-                        )}
-                      </p>
-                    </div>
-                    <div className='lg:max-w-[250px] max-w-[100px]'>
-                      <p className="lg:text-lg text-sm font-bold">After</p>
-                      <p className="lg:text-lg text-sm font-arabic">
-                        {selectedAyatIndex !== null
-                          ? loadingDetails
-                            ? "Loading..."
-                            : ayatDetails?.after || "-"
-                          : ""}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
               </div>
 
             </main>
