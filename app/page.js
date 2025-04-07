@@ -29,7 +29,6 @@ export default function Home() {
   const [thematicContexts, setThematicContexts] = useState([]);
   const [ayats, setAyats] = useState([]);
   const [ayatDetails, setAyatDetails] = useState([]);
-  const [Surah, setSurah] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [loadingThemes, setLoadingThemes] = useState(false);
@@ -207,6 +206,8 @@ export default function Home() {
     }
 
     // Reset all deeper levels
+    setSelectedAyatIndex(null);
+    setAyatDetails(null);
     setSelectedTheme(null);
     setSelectedSubTheme(null);
     setSelectedThematicTopic(null);
@@ -215,6 +216,120 @@ export default function Home() {
     setThematicOpenIndex(null);
     setContextOpenIndex(null);
     setfiveGramOpenIndex(null);
+  };
+
+  // Toggle Bi Gram
+  const toggleSubThemes = (subIndex, theme) => {
+    const isSameIndex = subOpenIndex === subIndex;
+
+    // If it's the same index, deselect it and reset higher levels
+    if (isSameIndex) {
+      setSubOpenIndex(null);
+      setSelectedTheme(null);
+      setSelectedSubTheme(null);
+      setSelectedThematicTopic(null);
+      setSelectedThematicContext(null);
+      setThematicOpenIndex(null);
+      setContextOpenIndex(null);
+      setfiveGramOpenIndex(null);
+    } else {
+      // If it's a new sub-theme, select it and fetch data
+      setSubOpenIndex(subIndex);
+      setSelectedTheme(theme);
+
+      // Clear deeper selections and show loading message
+      setSelectedAyatIndex(null);
+      setAyatDetails(null);
+      setSelectedSubTheme(null);
+      setSelectedThematicTopic(null);
+      setSelectedThematicContext(null);
+      setThematicOpenIndex(null);
+      setContextOpenIndex(null);
+      setfiveGramOpenIndex(null);
+
+      setSubThemes([]);  // Clear old sub-themes
+      setLoadingSubThemes(true);  // Show loading message
+
+      fetchSubThemes(theme.id);
+    }
+  };
+
+  // Toggle Tri Gram
+  const toggleThematicTopics = (thematicIndex, theme) => {
+    const isSameIndex = thematicOpenIndex === thematicIndex;
+
+    // If it's the same index, deselect it and reset higher levels
+    if (isSameIndex) {
+      setThematicOpenIndex(null);
+      setSelectedSubTheme(null);
+      setSelectedThematicTopic(null);
+      setSelectedThematicContext(null);
+      setContextOpenIndex(null);
+      setfiveGramOpenIndex(null);
+    } else {
+      // If it's a new thematic topic, select it and fetch data
+      setThematicOpenIndex(thematicIndex);
+      setSelectedSubTheme(theme);
+
+      // Clear deeper selections and show loading message
+      setSelectedAyatIndex(null);
+      setAyatDetails(null);
+      setSelectedThematicTopic(null);
+      setSelectedThematicContext(null);
+      setContextOpenIndex(null);
+      setfiveGramOpenIndex(null);
+
+      setThematicTopics([]);  // Clear old thematic topics
+      setLoadingThematicTopics(true);  // Show loading message
+
+      fetchThematicTopics(theme.id);
+    }
+  };
+
+  // Toggle Four Gram
+  const toggleThematicContext = (contextIndex, themeTopic) => {
+    const isSameIndex = contextOpenIndex === contextIndex;
+
+    // If it's the same index, deselect it and reset higher levels
+    if (isSameIndex) {
+      setContextOpenIndex(null);
+      setSelectedThematicTopic(null);
+      setSelectedThematicContext(null);
+      setfiveGramOpenIndex(null);
+    } else {
+      // If it's a new thematic context, select it and fetch data
+      setContextOpenIndex(contextIndex);
+      setSelectedThematicTopic(themeTopic);
+
+      // Clear deeper selections and show loading message
+      setSelectedAyatIndex(null);
+      setAyatDetails(null);
+      setSelectedThematicContext(null);
+      setfiveGramOpenIndex(null);
+
+      setThematicContexts([]);  // Clear old thematic contexts
+      setLoadingThematicContexts(true);  // Show loading message
+
+      fetchThematicContext(themeTopic.id);
+    }
+  };
+
+  // Toggle Five Gram
+  const toggleFiveGram = (index, context) => {
+    const isSameIndex = fiveGramOpenIndex === index;
+
+    // If it's the same index, deselect it and reset higher levels
+    if (isSameIndex) {
+      setAyatDetails(null);
+      setfiveGramOpenIndex(null);
+      setSelectedThematicContext(null);
+    } else {
+      // If it's a new five-gram, select it
+      setSelectedAyatIndex(null);
+      setAyatDetails(null);
+      setfiveGramOpenIndex(index);
+      setSelectedThematicContext(context);
+    }
   };
 
   // Fetch Bi Gram
@@ -252,40 +367,6 @@ export default function Home() {
     setLoadingThemes(false);
   };
 
-  // Toggle Bi Gram
-  const toggleSubThemes = (subIndex, theme) => {
-    const isSameIndex = subOpenIndex === subIndex;
-
-    // If it's the same index, deselect it and reset higher levels
-    if (isSameIndex) {
-      setSubOpenIndex(null);
-      setSelectedTheme(null);
-      setSelectedSubTheme(null);
-      setSelectedThematicTopic(null);
-      setSelectedThematicContext(null);
-      setThematicOpenIndex(null);
-      setContextOpenIndex(null);
-      setfiveGramOpenIndex(null);
-    } else {
-      // If it's a new sub-theme, select it and fetch data
-      setSubOpenIndex(subIndex);
-      setSelectedTheme(theme);
-
-      // Clear deeper selections and show loading message
-      setSelectedSubTheme(null);
-      setSelectedThematicTopic(null);
-      setSelectedThematicContext(null);
-      setThematicOpenIndex(null);
-      setContextOpenIndex(null);
-      setfiveGramOpenIndex(null);
-
-      setSubThemes([]);  // Clear old sub-themes
-      setLoadingSubThemes(true);  // Show loading message
-
-      fetchSubThemes(theme.id);
-    }
-  };
-
   // Fetch Tri Gram
   const fetchSubThemes = async (topicId) => {
     setLoadingSubThemes(true);
@@ -301,36 +382,6 @@ export default function Home() {
       console.error("Error fetching tri-grams:", error);
     }
     setLoadingSubThemes(false);
-  };
-
-  // Toggle Tri Gram
-  const toggleThematicTopics = (thematicIndex, theme) => {
-    const isSameIndex = thematicOpenIndex === thematicIndex;
-
-    // If it's the same index, deselect it and reset higher levels
-    if (isSameIndex) {
-      setThematicOpenIndex(null);
-      setSelectedSubTheme(null);
-      setSelectedThematicTopic(null);
-      setSelectedThematicContext(null);
-      setContextOpenIndex(null);
-      setfiveGramOpenIndex(null);
-    } else {
-      // If it's a new thematic topic, select it and fetch data
-      setThematicOpenIndex(thematicIndex);
-      setSelectedSubTheme(theme);
-
-      // Clear deeper selections and show loading message
-      setSelectedThematicTopic(null);
-      setSelectedThematicContext(null);
-      setContextOpenIndex(null);
-      setfiveGramOpenIndex(null);
-
-      setThematicTopics([]);  // Clear old thematic topics
-      setLoadingThematicTopics(true);  // Show loading message
-
-      fetchThematicTopics(theme.id);
-    }
   };
 
   // Fetch Four Gram
@@ -350,32 +401,6 @@ export default function Home() {
     setLoadingThematicTopics(false);
   };
 
-  // Toggle Four Gram
-  const toggleThematicContext = (contextIndex, themeTopic) => {
-    const isSameIndex = contextOpenIndex === contextIndex;
-
-    // If it's the same index, deselect it and reset higher levels
-    if (isSameIndex) {
-      setContextOpenIndex(null);
-      setSelectedThematicTopic(null);
-      setSelectedThematicContext(null);
-      setfiveGramOpenIndex(null);
-    } else {
-      // If it's a new thematic context, select it and fetch data
-      setContextOpenIndex(contextIndex);
-      setSelectedThematicTopic(themeTopic);
-
-      // Clear deeper selections and show loading message
-      setSelectedThematicContext(null);
-      setfiveGramOpenIndex(null);
-
-      setThematicContexts([]);  // Clear old thematic contexts
-      setLoadingThematicContexts(true);  // Show loading message
-
-      fetchThematicContext(themeTopic.id);
-    }
-  };
-
   // Fetch Five Gram
   const fetchThematicContext = async (topicId) => {
     setLoadingThematicContexts(true);
@@ -391,21 +416,6 @@ export default function Home() {
       console.error("Error fetching five-grams:", error);
     }
     setLoadingThematicContexts(false);
-  };
-
-  // Toggle Five Gram
-  const toggleFiveGram = (index, context) => {
-    const isSameIndex = fiveGramOpenIndex === index;
-
-    // If it's the same index, deselect it and reset higher levels
-    if (isSameIndex) {
-      setfiveGramOpenIndex(null);
-      setSelectedThematicContext(null);
-    } else {
-      // If it's a new five-gram, select it
-      setfiveGramOpenIndex(index);
-      setSelectedThematicContext(context);
-    }
   };
 
   // Components
@@ -636,6 +646,8 @@ export default function Home() {
             </header>
 
             <main className="flex flex-col items-center w-full lg:px-8 px-1 lg:py-6 pt-4 my-0">
+
+              {/* N-Gram Selection */}
               <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full text-center">
 
                 {/* Bi-Gram */}
@@ -753,15 +765,16 @@ export default function Home() {
               {/* Details */}
               <div className='w-full'>
 
-                <div className='w-full'>
+                {/* Details of Selected Ayat */}
+                <div className="w-full">
                   <div className="lg:mt-2 mt-6 lg:mb-8 mb-6 items-start">
                     <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
                     <h1 className="lg:text-xl text-lg font-julius-sans font-bold lg:pt-3 pt-1">
                       Details of selected Ayat
                     </h1>
                     <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
-                    <div className='grid gap-y-2'>
-                      {/* Displaying the Ayat details */}
+
+                    <div className="grid gap-y-2">
                       <p className="lg:text-lg text-sm">
                         <b className="font-julius-sans">Selected Ayat : </b>
                         {selectedAyatIndex !== null && ayats[selectedAyatIndex] ? (
@@ -771,20 +784,39 @@ export default function Home() {
                         )}
                       </p>
                       <p className="lg:text-lg text-sm font-julius-sans">
-                        <b>Surah Name : </b>{selectedAyatIndex !== null && loadingDetails ? "Loading..." : ayatDetails?.surahName || ""}
+                        <b>Surah Name : </b>
+                        {selectedAyatIndex !== null
+                          ? loadingDetails
+                            ? "Loading..."
+                            : ayatDetails?.surahName || ""
+                          : ""}
                       </p>
                       <p className="lg:text-lg text-sm font-julius-sans">
-                        <b>Ayat Number : </b>{selectedAyatIndex !== null && loadingDetails ? "Loading..." : ayatDetails?.ayatNumber || ""}
+                        <b>Ayat Number : </b>
+                        {selectedAyatIndex !== null
+                          ? loadingDetails
+                            ? "Loading..."
+                            : ayatDetails?.ayatNumber || ""
+                          : ""}
                       </p>
                       <p className="lg:text-lg text-sm font-julius-sans">
-                        <b>Ayat Translation : </b>{selectedAyatIndex !== null && loadingDetails ? "Loading..." : ayatDetails?.translation || ""}
+                        <b>Ayat Translation : </b>
+                        {selectedAyatIndex !== null
+                          ? loadingDetails
+                            ? "Loading..."
+                            : ayatDetails?.translation || ""
+                          : ""}
                       </p>
                       <p className="lg:text-lg text-sm">
                         <b className="font-julius-sans">Ayat Text : </b>
-                        {selectedAyatIndex !== null && loadingDetails ? (
-                          <span className="font-julius-sans">Loading...</span>
+                        {selectedAyatIndex !== null ? (
+                          loadingDetails ? (
+                            <span className="font-julius-sans">Loading...</span>
+                          ) : (
+                            <span className="font-arabic">{ayatDetails?.ayatText || ""}</span>
+                          )
                         ) : (
-                          <span className="font-arabic">{ayatDetails?.ayatText || ""}</span>
+                          <span className="font-julius-sans"></span>
                         )}
                       </p>
                     </div>
@@ -792,41 +824,46 @@ export default function Home() {
                 </div>
 
                 {/* Before, Selected Pattern, After Section */}
-                <div className=''>
-                  <div className='flex flex-row items-start lg:gap-8 gap-6'>
+                <div className="">
+                  <div className="flex flex-row items-start lg:gap-8 gap-6">
                     <div>
                       <p className="lg:text-lg text-sm font-bold">Before</p>
                       <p className="lg:text-lg text-sm font-arabic">
-                        {selectedTheme || selectedSubTheme || selectedThematicTopic || selectedThematicContext
-                          ? ayatDetails?.before || "Loading..."
-                          : "-"}
+                        {selectedAyatIndex !== null
+                          ? loadingDetails
+                            ? "Loading..."
+                            : ayatDetails?.before || "-"
+                          : ""}
                       </p>
                     </div>
                     <div>
                       <p className="lg:text-lg text-sm font-bold">Selected Pattern</p>
                       <p className="lg:text-lg text-sm font-arabic text-green-200">
-                        {selectedTheme || selectedSubTheme || selectedThematicTopic || selectedThematicContext
-                          ? <span className="block sm:inline font-normal">{  /* 'block' for small screens, 'inline' for larger screens */
-                            selectedThematicContext
-                              ? selectedThematicContext.five_gram_text // Display the five-gram text
+                        {selectedAyatIndex !== null ? (
+                          <span className="block sm:inline font-normal">
+                            {selectedThematicContext
+                              ? selectedThematicContext.five_gram_text
                               : selectedThematicTopic
-                                ? selectedThematicTopic.four_gram_text // Display the four-gram text
+                                ? selectedThematicTopic.four_gram_text
                                 : selectedSubTheme
-                                  ? selectedSubTheme.tri_gram_text // Display the tri-gram text
+                                  ? selectedSubTheme.tri_gram_text
                                   : selectedTheme
-                                    ? selectedTheme.bi_gram_text // Display the bi-gram text
-                                    : "None"
-                          }
-                          </span> || "Loading..."
-                          : "-"}
+                                    ? selectedTheme.bi_gram_text
+                                    : ""}
+                          </span>
+                        ) : (
+                          ""
+                        )}
                       </p>
                     </div>
                     <div>
                       <p className="lg:text-lg text-sm font-bold">After</p>
                       <p className="lg:text-lg text-sm font-arabic">
-                        {selectedTheme || selectedSubTheme || selectedThematicTopic || selectedThematicContext
-                          ? ayatDetails?.after || "Loading..."
-                          : "-"}
+                        {selectedAyatIndex !== null
+                          ? loadingDetails
+                            ? "Loading..."
+                            : ayatDetails?.after || "-"
+                          : ""}
                       </p>
                     </div>
                   </div>
