@@ -833,18 +833,6 @@ export default function Home() {
                             : ayatDetails?.translation || ""
                           : ""}
                       </p>
-                      <p className="lg:text-lg text-sm">
-                        <b className="font-julius-sans">Ayat Text : </b>
-                        {selectedAyatIndex !== null ? (
-                          loadingDetails ? (
-                            <span className="font-julius-sans">Loading...</span>
-                          ) : (
-                            <span className="font-arabic">{ayatDetails?.ayatText || ""}</span>
-                          )
-                        ) : (
-                          <span className="font-julius-sans"></span>
-                        )}
-                      </p>
                     </div>
                   </div>
                 </div>
