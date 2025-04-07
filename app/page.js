@@ -12,11 +12,12 @@ export default function Home() {
   const [contextOpenIndex, setContextOpenIndex] = useState(null);
   const [fiveGramOpenIndex, setfiveGramOpenIndex] = useState(null);
 
-  const [selectedTopic, setSelectedTopic] = useState(null);
-  const [selectedTheme, setSelectedTheme] = useState(null);
-  const [selectedSubTheme, setSelectedSubTheme] = useState(null);
-  const [selectedThematicTopic, setSelectedThematicTopic] = useState(null);
-  const [selectedThematicContext, setSelectedThematicContext] = useState(null);
+  const [selectedTopic, setSelectedTopic] = useState(null); //OneGram
+  const [selectedTheme, setSelectedTheme] = useState(null); //BiGram
+  const [selectedSubTheme, setSelectedSubTheme] = useState(null); //TriGram
+  const [selectedThematicTopic, setSelectedThematicTopic] = useState(null); //FourGram
+  const [selectedThematicContext, setSelectedThematicContext] = useState(null); //FiveGram
+  const [selectedAyatIndex, setSelectedAyatIndex] = useState(null); // Ayat Index
 
   const [gramState, setGramState] = React.useState('bi-gram');
 
@@ -26,12 +27,17 @@ export default function Home() {
   const [subThemes, setSubThemes] = useState([]);
   const [thematicTopics, setThematicTopics] = useState([]);
   const [thematicContexts, setThematicContexts] = useState([]);
+  const [ayats, setAyats] = useState([]);
+  const [ayatDetails, setAyatDetails] = useState([]);
+  const [Surah, setSurah] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [loadingThemes, setLoadingThemes] = useState(false);
   const [loadingSubThemes, setLoadingSubThemes] = useState(false);
   const [loadingThematicTopics, setLoadingThematicTopics] = useState(false);
   const [loadingThematicContexts, setLoadingThematicContexts] = useState(false);
+  const [loadingAyats, setLoadingAyats] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Fetch One Gram
   useEffect(() => {
@@ -103,6 +109,83 @@ export default function Home() {
     fetchtopiclinktheme();
   }, []);
 
+  // Fetch Ayats
+  useEffect(() => {
+    const fetchAyats = async () => {
+      setLoadingAyats(true);
+
+      let gram = null;
+      let level = null;
+
+      if (selectedThematicContext) {
+        gram = selectedThematicContext;
+        level = "fivegram";
+      } else if (selectedThematicTopic) {
+        gram = selectedThematicTopic;
+        level = "fourgram";
+      } else if (selectedSubTheme) {
+        gram = selectedSubTheme;
+        level = "trigram";
+      } else if (selectedTheme) {
+        gram = selectedTheme;
+        level = "bigram";
+      }
+
+      if (!gram) {
+        setAyats([]);
+        setLoadingAyats(false);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/get/ayats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ level, id: gram.id }),
+        });
+        const data = await res.json();
+        setAyats(data.ayats || []);
+      } catch (e) {
+        console.error("Error fetching ayats", e);
+        setAyats([]);
+      }
+
+      setLoadingAyats(false);
+    };
+
+    fetchAyats();
+  }, [selectedTheme, selectedSubTheme, selectedThematicTopic, selectedThematicContext]);
+
+  // Fetch Ayat Details when selectedAyatIndex changes
+  useEffect(() => {
+    const fetchAyatDetails = async () => {
+      if (selectedAyatIndex === null) return;
+
+      // Determine the highest-order selected n-gram
+      let selectedPatternType = null;
+      if (selectedThematicContext) selectedPatternType = "five_grams";
+      else if (selectedThematicTopic) selectedPatternType = "four_grams";
+      else if (selectedSubTheme) selectedPatternType = "tri_grams";
+      else if (selectedTheme) selectedPatternType = "bi_grams";
+
+      setLoadingDetails(true);
+      try {
+        const ayatText = ayats[selectedAyatIndex];
+        const res = await fetch(
+          `/api/get/ayat-details?text=${encodeURIComponent(ayatText)}&ngram=${selectedPatternType}`
+        );
+        const data = await res.json();
+        setAyatDetails(data.details || []);
+      } catch (e) {
+        console.error("Error fetching ayat details", e);
+        setAyatDetails([]);
+      }
+      setLoadingDetails(false);
+    };
+
+    fetchAyatDetails();
+  }, [selectedAyatIndex]);
+
   // Toggle One Gram
   const toggleSublist = (index, topic) => {
     if (topic === null) {
@@ -173,18 +256,32 @@ export default function Home() {
   const toggleSubThemes = (subIndex, theme) => {
     const isSameIndex = subOpenIndex === subIndex;
 
-    setSubOpenIndex(isSameIndex ? null : subIndex);
-    setSelectedTheme(isSameIndex ? null : theme);
-
-    if (!isSameIndex) {
-      setSubThemes([]);
-      setLoadingSubThemes(true);  // Show loading message
+    // If it's the same index, deselect it and reset higher levels
+    if (isSameIndex) {
+      setSubOpenIndex(null);
+      setSelectedTheme(null);
       setSelectedSubTheme(null);
       setSelectedThematicTopic(null);
       setSelectedThematicContext(null);
       setThematicOpenIndex(null);
       setContextOpenIndex(null);
       setfiveGramOpenIndex(null);
+    } else {
+      // If it's a new sub-theme, select it and fetch data
+      setSubOpenIndex(subIndex);
+      setSelectedTheme(theme);
+
+      // Clear deeper selections and show loading message
+      setSelectedSubTheme(null);
+      setSelectedThematicTopic(null);
+      setSelectedThematicContext(null);
+      setThematicOpenIndex(null);
+      setContextOpenIndex(null);
+      setfiveGramOpenIndex(null);
+
+      setSubThemes([]);  // Clear old sub-themes
+      setLoadingSubThemes(true);  // Show loading message
+
       fetchSubThemes(theme.id);
     }
   };
@@ -210,16 +307,28 @@ export default function Home() {
   const toggleThematicTopics = (thematicIndex, theme) => {
     const isSameIndex = thematicOpenIndex === thematicIndex;
 
-    setThematicOpenIndex(isSameIndex ? null : thematicIndex);
-    setSelectedSubTheme(isSameIndex ? null : theme);
-
-    if (!isSameIndex) {
-      setThematicTopics([]);
-      setLoadingThematicTopics(true);  // Show loading message
+    // If it's the same index, deselect it and reset higher levels
+    if (isSameIndex) {
+      setThematicOpenIndex(null);
+      setSelectedSubTheme(null);
       setSelectedThematicTopic(null);
       setSelectedThematicContext(null);
       setContextOpenIndex(null);
       setfiveGramOpenIndex(null);
+    } else {
+      // If it's a new thematic topic, select it and fetch data
+      setThematicOpenIndex(thematicIndex);
+      setSelectedSubTheme(theme);
+
+      // Clear deeper selections and show loading message
+      setSelectedThematicTopic(null);
+      setSelectedThematicContext(null);
+      setContextOpenIndex(null);
+      setfiveGramOpenIndex(null);
+
+      setThematicTopics([]);  // Clear old thematic topics
+      setLoadingThematicTopics(true);  // Show loading message
+
       fetchThematicTopics(theme.id);
     }
   };
@@ -245,14 +354,24 @@ export default function Home() {
   const toggleThematicContext = (contextIndex, themeTopic) => {
     const isSameIndex = contextOpenIndex === contextIndex;
 
-    setContextOpenIndex(isSameIndex ? null : contextIndex);
-    setSelectedThematicTopic(isSameIndex ? null : themeTopic);
-
-    if (!isSameIndex) {
-      setThematicContexts([]);
-      setLoadingThematicContexts(true);  // Show loading message
+    // If it's the same index, deselect it and reset higher levels
+    if (isSameIndex) {
+      setContextOpenIndex(null);
+      setSelectedThematicTopic(null);
       setSelectedThematicContext(null);
       setfiveGramOpenIndex(null);
+    } else {
+      // If it's a new thematic context, select it and fetch data
+      setContextOpenIndex(contextIndex);
+      setSelectedThematicTopic(themeTopic);
+
+      // Clear deeper selections and show loading message
+      setSelectedThematicContext(null);
+      setfiveGramOpenIndex(null);
+
+      setThematicContexts([]);  // Clear old thematic contexts
+      setLoadingThematicContexts(true);  // Show loading message
+
       fetchThematicContext(themeTopic.id);
     }
   };
@@ -278,10 +397,16 @@ export default function Home() {
   const toggleFiveGram = (index, context) => {
     const isSameIndex = fiveGramOpenIndex === index;
 
-    setfiveGramOpenIndex(isSameIndex ? null : index);
-    setSelectedThematicContext(isSameIndex ? null : context);
+    // If it's the same index, deselect it and reset higher levels
+    if (isSameIndex) {
+      setfiveGramOpenIndex(null);
+      setSelectedThematicContext(null);
+    } else {
+      // If it's a new five-gram, select it
+      setfiveGramOpenIndex(index);
+      setSelectedThematicContext(context);
+    }
   };
-
 
   // Components
 
@@ -395,7 +520,7 @@ export default function Home() {
             ) : (
               <p className="text-gray-500">No sub-themes available</p>
             )
-          )  : (
+          ) : (
             <p className="text-gray-500">Select a primary theme to view sub themes</p>
           )}
         </div>
@@ -424,11 +549,11 @@ export default function Home() {
                     <hr className="w-full my-1 border-[#3a403e]" />
                   </li>
                 ))}
-                </ul>
+              </ul>
             ) : (
               <p className="text-gray-500">No thematic topics available</p>
             )
-          )  : (
+          ) : (
             <p className="text-gray-500">Select a sub theme to view thematic topics</p>
           )}
         </div>
@@ -475,7 +600,7 @@ export default function Home() {
       className="my-4 w-full bg-[#39413e] hover:bg-[#5b6763] focus:outline-2 focus:outline-offset-2 focus:outline-[#5b6763] active:bg-[#6d7875] rounded-sm py-1"
     >
       <div className="flex items-center justify-center">
-        Continue <GrFormNext className="text-xl" />
+        Next <GrFormNext className="text-xl" />
       </div>
     </button>
   );
@@ -555,22 +680,69 @@ export default function Home() {
               </div>
 
               {/* Result */}
+              <div className='w-full pt-2'>
+                <div className='lg:mt-6 mt-4 lg:mb-0 mb-4'>
+                  <hr className="w-full my-1 border-[#4a504e]" />
+                  <h1 className='lg:text-left text-center lg:text-xl sm:text-sm font-bold py-4'>
+                    Selected Pattern:{" "}
+                    <span className="block sm:inline font-normal">{  /* 'block' for small screens, 'inline' for larger screens */
+                      selectedThematicContext
+                        ? selectedThematicContext.five_gram_text // Display the five-gram text
+                        : selectedThematicTopic
+                          ? selectedThematicTopic.four_gram_text // Display the four-gram text
+                          : selectedSubTheme
+                            ? selectedSubTheme.tri_gram_text // Display the tri-gram text
+                            : selectedTheme
+                              ? selectedTheme.bi_gram_text // Display the bi-gram text
+                              : "None"
+                    }</span>
+                  </h1>
+                  <hr className="w-full my-1 border-[#4a504e]" />
+                </div>
 
-              <div className="lg:py-8 py-4 w-full">
-                <div>
-                  <h3 className="lg:text-left text-center font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-300">Search Result (Ayats Found: 2)</h3>
-                  <div className="bg-[#1f2624] shadow-md rounded py-3">
-                    <div className="lg:px-4 px-3 lg:h-[20rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
-                      <div className="lg:py-2 lg:px-4">
-                        <div className="">
-                          <p className="font-bold lg:text-xl text-sm">Ayats</p>
-                          <hr className="w-full my-1 border-[#4a504e]"></hr>
-                          <ul>
-                            <li className="py-1 font-arabic text-green-200 lg:text-xl text-sm">بسم الله الرحمن الرحيم</li>
-                            <hr className="w-full my-1 border-[#3a403e]"></hr>
-                            <li className="py-1 font-arabic lg:text-xl text-sm">يا ايها الذين امنوا</li>
-                            <hr className="w-full my-1 border-[#3a403e]"></hr>
-                          </ul>
+                <div className="lg:py-8 py-4">
+                  <div>
+                    <h3 className="lg:text-left text-center font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-300">
+                      {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext
+                        ? "Search Result"
+                        : loadingAyats
+                          ? "Loading Ayats..."
+                          : `Search Result (Ayats Found: ${ayats.length})`}
+                    </h3>
+                    <div className="bg-[#1f2624] shadow-md rounded py-3">
+                      <div className="lg:px-4 px-3 lg:h-[20rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
+                        <div className="lg:py-2 lg:px-4">
+                          <div className="">
+                            <p className="font-bold lg:text-xl text-sm">Ayats</p>
+                            <hr className="w-full my-1 border-[#4a504e]"></hr>
+                            <ul className=''>
+                              {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext ? (
+                                <p className="text-zinc-400 py-2">Select a primary theme or higher to view Ayats.</p>
+                              ) : loadingAyats ? (
+                                <p className="text-zinc-400 py-2">Loading Ayats...</p>
+                              ) : ayats.length === 0 ? (
+                                <p className="text-zinc-400 py-2">No Ayats found for the selected topic.</p>
+                              ) : (
+                                ayats.map((text, idx) => (
+                                  <div
+                                    key={idx}
+                                    onClick={() => {
+                                      setAyatDetails(null); // clear before loading new
+                                      setSelectedAyatIndex(prev => (prev === idx ? null : idx));
+                                    }}
+                                    className={`cursor-pointer rounded ${selectedAyatIndex === idx ? "bg-[#2c3533] text-green-200" : ""
+                                      }`}
+                                  >
+                                    <li className={`py-2 font-arabic lg:text-xl text-sm ${selectedAyatIndex !== idx ? "text-zinc-200" : ""
+                                      }`}>
+                                      <span className="text-zinc-400 mr-2">{idx + 1}.</span> {text}
+                                    </li>
+                                    <hr className="w-full my-1 border-[#3a403e]" />
+                                  </div>
+                                ))
+                              )}
+                            </ul>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -579,36 +751,87 @@ export default function Home() {
               </div>
 
               {/* Details */}
-
-              <div className="lg:mt-2 mt-6 lg:mb-8 mb-6 items-start w-full">
-                <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500"></hr>
-                <h1 className="lg:text-xl text-lg font-julius-sans font-bold lg:pt-3 pt-1">Details of selected Ayat</h1>
-                <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500"></hr>
-                <div className="grid lg:grid-cols-2 grid-cols-1 pt-2 lg:gap-y-3 gap-y-3 gap-x-8">
-                  <p className="lg:text-lg text-sm font-arabic"><b className="font-julius-sans">Selected Pattern : </b>الله الرحمن</p>
-                  <p className="lg:text-lg text-sm font-julius-sans"><b>Surah Name : </b>Yusuf - Prophet Joseph (12)</p>
-                  <p className="lg:text-lg text-sm font-julius-sans"><b>Ayat Number : </b>1</p>
-                  <p className="lg:text-lg text-sm font-julius-sans"><b>No. of Occurrences : </b> 2</p>
-                  <p className="lg:text-lg text-sm font-julius-sans"><b>Ayat Translation : </b> In the name of Allah, the Entirely Merciful, the Especially Merciful.</p>
-                  <p className="lg:text-lg text-sm font-arabic"><b className="font-julius-sans">Ayat Text : </b> بسم الله الرحمن الرحيم</p>
-                </div>
-              </div>
-
               <div className='w-full'>
-                <div className='flex flex-row items-start lg:gap-8 gap-6'>
-                  <div className=''>
-                    <p className="lg:text-lg text-sm font-bold">Before</p>
-                    <p className="lg:text-lg text-sm font-arabic">الرحيم</p>
-                  </div>
-                  <div>
-                    <p className="lg:text-lg text-sm font-bold">Selected Pattern</p>
-                    <p className="lg:text-lg text-sm font-arabic text-green-200">الله الرحمن</p>
-                  </div>
-                  <div>
-                    <p className="lg:text-lg text-sm font-bold">After</p>
-                    <p className="lg:text-lg text-sm font-arabic">بسم</p>
+
+                <div className='w-full'>
+                  <div className="lg:mt-2 mt-6 lg:mb-8 mb-6 items-start">
+                    <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
+                    <h1 className="lg:text-xl text-lg font-julius-sans font-bold lg:pt-3 pt-1">
+                      Details of selected Ayat
+                    </h1>
+                    <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
+                    <div className='grid gap-y-2'>
+                      {/* Displaying the Ayat details */}
+                      <p className="lg:text-lg text-sm">
+                        <b className="font-julius-sans">Selected Ayat : </b>
+                        {selectedAyatIndex !== null && ayats[selectedAyatIndex] ? (
+                          <span className="font-arabic">{ayats[selectedAyatIndex]}</span>
+                        ) : (
+                          <span className="font-julius-sans"></span>
+                        )}
+                      </p>
+                      <p className="lg:text-lg text-sm font-julius-sans">
+                        <b>Surah Name : </b>{selectedAyatIndex !== null && loadingDetails ? "Loading..." : ayatDetails?.surahName || ""}
+                      </p>
+                      <p className="lg:text-lg text-sm font-julius-sans">
+                        <b>Ayat Number : </b>{selectedAyatIndex !== null && loadingDetails ? "Loading..." : ayatDetails?.ayatNumber || ""}
+                      </p>
+                      <p className="lg:text-lg text-sm font-julius-sans">
+                        <b>Ayat Translation : </b>{selectedAyatIndex !== null && loadingDetails ? "Loading..." : ayatDetails?.translation || ""}
+                      </p>
+                      <p className="lg:text-lg text-sm">
+                        <b className="font-julius-sans">Ayat Text : </b>
+                        {selectedAyatIndex !== null && loadingDetails ? (
+                          <span className="font-julius-sans">Loading...</span>
+                        ) : (
+                          <span className="font-arabic">{ayatDetails?.ayatText || ""}</span>
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
+
+                {/* Before, Selected Pattern, After Section */}
+                <div className=''>
+                  <div className='flex flex-row items-start lg:gap-8 gap-6'>
+                    <div>
+                      <p className="lg:text-lg text-sm font-bold">Before</p>
+                      <p className="lg:text-lg text-sm font-arabic">
+                        {selectedTheme || selectedSubTheme || selectedThematicTopic || selectedThematicContext
+                          ? ayatDetails?.before || "Loading..."
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="lg:text-lg text-sm font-bold">Selected Pattern</p>
+                      <p className="lg:text-lg text-sm font-arabic text-green-200">
+                        {selectedTheme || selectedSubTheme || selectedThematicTopic || selectedThematicContext
+                          ? <span className="block sm:inline font-normal">{  /* 'block' for small screens, 'inline' for larger screens */
+                            selectedThematicContext
+                              ? selectedThematicContext.five_gram_text // Display the five-gram text
+                              : selectedThematicTopic
+                                ? selectedThematicTopic.four_gram_text // Display the four-gram text
+                                : selectedSubTheme
+                                  ? selectedSubTheme.tri_gram_text // Display the tri-gram text
+                                  : selectedTheme
+                                    ? selectedTheme.bi_gram_text // Display the bi-gram text
+                                    : "None"
+                          }
+                          </span> || "Loading..."
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="lg:text-lg text-sm font-bold">After</p>
+                      <p className="lg:text-lg text-sm font-arabic">
+                        {selectedTheme || selectedSubTheme || selectedThematicTopic || selectedThematicContext
+                          ? ayatDetails?.after || "Loading..."
+                          : "-"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
             </main>
