@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GrFormNext, GrFormPrevious, GrFormClose } from "react-icons/gr";
 import { translateToArabic } from './utils/translate.js';
 
@@ -45,6 +45,9 @@ export default function Home() {
   const [searchedTopics, setSearchedTopics] = useState([]);
   const [translated, setTranslated] = useState('');
   const [searchTrigger, setSearchTrigger] = useState(false);
+
+  const oneGramContainerRef = useRef(null);
+  const [oneGramScrollPos, setOneGramScrollPos] = useState(0);
 
   const groupedTopics = searchedTopics.reduce((acc, topic) => {
     if (!acc[topic.foundInGram]) acc[topic.foundInGram] = [];
@@ -304,17 +307,38 @@ function scrollToGram(idx) {
     fetchAyatDetails();
   }, [selectedAyatIndex]);
 
+  // Scroll to One Gram Position
+  useEffect(() => {
+    if (openIndex === null) {
+      const timer = setTimeout(() => {
+        const container = oneGramContainerRef.current;
+        if (container) {
+          container.scrollTop = oneGramScrollPos;
+        }
+      }, 0); // no need for long delay
+      return () => clearTimeout(timer);
+    }
+  }, [openIndex]);
+
   // Toggle One Gram
   const toggleSublist = (index, topic) => {
+    const container = oneGramContainerRef.current;
+
+    if (container && openIndex === null) {
+      setOneGramScrollPos(container.scrollTop); // Save current scroll before opening
+    }
+
     if (topic === null) {
       setSelectedTopic(null);
       setOpenIndex(null);
+      setThematicContexts([]);
     } else {
       const isSameIndex = openIndex === index;
 
       if (isSameIndex) {
         setSelectedTopic(null);
         setOpenIndex(null);
+        setThematicContexts([]);
       } else {
         setPrimaryThemes([]);  // Clear old data instantly
         setLoadingThemes(true); // Show loading message
@@ -352,6 +376,7 @@ function scrollToGram(idx) {
       setThematicOpenIndex(null);
       setContextOpenIndex(null);
       setfiveGramOpenIndex(null);
+      setThematicContexts([]);
     } else {
       // If it's a new sub-theme, select it and fetch data
       setSubOpenIndex(subIndex);
@@ -387,6 +412,7 @@ function scrollToGram(idx) {
       setSelectedThematicContext(null);
       setContextOpenIndex(null);
       setfiveGramOpenIndex(null);
+      setThematicContexts([]);
     } else {
       // If it's a new thematic topic, select it and fetch data
       setThematicOpenIndex(thematicIndex);
@@ -418,6 +444,8 @@ function scrollToGram(idx) {
       setSelectedThematicTopic(null);
       setSelectedThematicContext(null);
       setfiveGramOpenIndex(null);
+      setThematicContexts([]);
+      setLoadingThematicContexts(false);
     } else {
       // If it's a new thematic context, select it and fetch data
       setContextOpenIndex(contextIndex);
@@ -555,7 +583,7 @@ function scrollToGram(idx) {
           <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-100">
             {selectedTopic ? "Text Patterns" : "Primary Words"}
 
-            {/* Back Button */}
+            {/* Clear Button */}
             {selectedTopic && (
               <button
                 className="ml-1 text-zinc-100 p-1 hover:text-green-200 translate-y-[3px] scale-125"
@@ -567,7 +595,10 @@ function scrollToGram(idx) {
           </h3>
         </div>
         <div className="bg-[#1f2624] shadow-md rounded py-3">
-          <div className="rounded lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
+          <div 
+            ref={oneGramContainerRef}
+            className="rounded lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base"
+          >
             {loadingPrimaryTopics ? (
               <p className="text-gray-500">Loading Primary Words...</p>
             ) : (
