@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { GrFormNext, GrFormPrevious, GrFormClose } from "react-icons/gr";
+import { translateToArabic } from './utils/translate.js';
 
 export default function Home() {
 
@@ -38,16 +39,122 @@ export default function Home() {
   const [loadingAyats, setLoadingAyats] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [loadingPrimaryTopics, setLoadingPrimaryTopics] = useState(true);
+  const [searchedTopics, setSearchedTopics] = useState([]);
+  const [translated, setTranslated] = useState('');
+  const [searchTrigger, setSearchTrigger] = useState(false);
+
+  const groupedTopics = searchedTopics.reduce((acc, topic) => {
+    if (!acc[topic.foundInGram]) acc[topic.foundInGram] = [];
+    acc[topic.foundInGram].push(topic);
+    return acc;
+  }, {});
+
+  const [currentGramIndex, setCurrentGramIndex] = React.useState(0);
+  const grams = Object.keys(groupedTopics);
+
+  async function fetchSearchResults(originalText, translatedText) {
+    try {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: originalText, translatedText }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Search API request failed');
+      }
+
+      const data = await response.json();
+      return data.results || [];
+    } catch (error) {
+      console.error('Error fetching search results:', error);
+      return [];
+    }
+  }
+
+function scrollToGram(idx) {
+  if (idx < 0 || idx >= grams.length + 2) return;
+
+  const element = document.getElementById(`gram-${idx}`);
+  const container = document.querySelector('.search-scroll-container');
+
+  if (element && container) {
+    // Set offset based on screen width (you can tweak breakpoints and values)
+    const isMobile = window.innerWidth <= 768;
+    const offset = isMobile ? 100 : 100;
+
+    let scrollTarget = element.offsetTop - offset;
+
+    // Clamp scrollTarget between 0 and max scroll
+    const maxScrollTop = container.scrollHeight - container.clientHeight;
+    if (scrollTarget < 0) scrollTarget = 0;
+    if (scrollTarget > maxScrollTop) scrollTarget = maxScrollTop;
+
+    container.scrollTo({
+      top: scrollTarget,
+      behavior: 'smooth',
+    });
+
+    setCurrentGramIndex(idx);
+  }
+}
+
+  // Debounce Search Input
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
+
+  useEffect(() => {
+    if (!debouncedSearch.trim()) {
+      setSearchedTopics([]);
+      return;
+    }
+
+    async function performSearch() {
+      setLoadingThemes(true);
+      console.log("Searching for:", debouncedSearch);
+
+      let translatedText = '';
+
+      try {
+        translatedText = await translateToArabic(debouncedSearch);
+        setTranslated(translatedText);
+      } catch (err) {
+        console.error('Translation failed:', err);
+        alert('Translation failed. Please try again later.');
+        setLoadingThemes(false);
+        return;
+      }
+
+      console.log("Translated to Arabic:", translatedText);
+
+      const results = await fetchSearchResults(debouncedSearch, translatedText);
+      setSearchedTopics(results);
+      setLoadingThemes(false);
+    }
+
+    performSearch();
+  }, [debouncedSearch, searchTrigger, primaryTopics, primaryThemes]);
+
   // Fetch One Gram
   useEffect(() => {
     const fetchPrimaryTopics = async () => {
       setLoading(true);
+      setLoadingPrimaryTopics(true);
       const cachedData = localStorage.getItem('primary-topics');
 
       // If data is cached, use it
       if (cachedData) {
         setPrimaryTopics(JSON.parse(cachedData));
         setLoading(false);
+        setLoadingPrimaryTopics(false);
         return;
       }
 
@@ -69,6 +176,7 @@ export default function Home() {
         console.error("Frontend Primary Topic Fetching Error:", error);
       } finally {
         setLoading(false);
+        setLoadingPrimaryTopics(false);
       }
     };
 
@@ -443,29 +551,31 @@ export default function Home() {
 
     return (
       <>
-        <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-100">
-          {selectedTopic ? "Primary Themes" : "Primary Topics"}
+        <div className='min-h-16 flex items-center justify-center'>
+          <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-100">
+            {selectedTopic ? "Text Patterns" : "Primary Words"}
 
-          {/* Back Button */}
-          {selectedTopic && (
-            <button
-              className="ml-1 text-zinc-100 p-1 hover:text-green-200 translate-y-[3px] scale-125"
-              onClick={() => toggleSublist(null, null)}
-            >
-              <GrFormClose size={20} />
-            </button>
-          )}
-        </h3>
+            {/* Back Button */}
+            {selectedTopic && (
+              <button
+                className="ml-1 text-zinc-100 p-1 hover:text-green-200 translate-y-[3px] scale-125"
+                onClick={() => toggleSublist(null, null)}
+              >
+                <GrFormClose size={20} />
+              </button>
+            )}
+          </h3>
+        </div>
         <div className="bg-[#1f2624] shadow-md rounded py-3">
-          <div className="rounded lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
-            {primaryTopics.length === 0 ? (
-              <p className="text-gray-500">Loading Primary Topics</p>
+          <div className="rounded lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
+            {loadingPrimaryTopics ? (
+              <p className="text-gray-500">Loading Primary Words...</p>
             ) : (
               <ul>
                 {/* Column Headers */}
                 <div className="grid grid-cols-2 gap-x-4 px-4 pb-2 mb-2 border-b-2 border-[#3a403e] text-center font-semibold">
-                  <p className="w-full">Topic</p>
                   <p className="w-full">Stemmed</p>
+                  <p className="w-full">Words</p>
                 </div>
 
                 {sortedTopics.map((topic, index) =>
@@ -477,8 +587,8 @@ export default function Home() {
                       >
                         {/* Topic Row */}
                         <div className="grid grid-cols-2 gap-x-4 px-4 text-center">
-                          <p className="w-full">{topic.topic_text}</p>
                           <p className="w-full">{topic.topic_stemmed}</p>
+                          <p className="w-full">{topic.topic_text}</p>
                         </div>
                       </div>
                       <hr className="w-full my-1 border-[#3a403e]" />
@@ -486,10 +596,10 @@ export default function Home() {
                       {/* Sublist for Primary Themes */}
                       {openIndex === index && (
                         <div>
-                          <p className="w-full mb-2 mt-4 border-b-2 border-[#3a403e] cursor-auto">Theme</p>
+                          <p className="w-full mb-2 mt-4 border-b-2 border-[#3a403e] cursor-auto">Text Patterns</p>
                           <ul className="mt-1 text-gray-400">
                             {loadingThemes ? (
-                              <p className="text-gray-500">Loading primary themes...</p>
+                              <p className="text-gray-500">Loading text patterns...</p>
                             ) : primaryThemes.length > 0 ? (
                               primaryThemes.map((theme, subIndex) => (
                                 <li
@@ -521,13 +631,13 @@ export default function Home() {
   const renderTriGramContent = () => (
     <>
       <h3 className={`font-julius-sans font-bold lg:text-xl text-lg py-1 ${selectedTheme ? 'text-zinc-100' : 'text-zinc-600'}`}>
-        Sub-Themes
+        Repeating 3-word Text Patterns
       </h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
-        <div className="lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
+        <div className="lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           {selectedTheme ? (
             loadingSubThemes ? (
-              <p className="text-gray-500">Loading sub-themes...</p>
+              <p className="text-gray-500">Loading repeating 3-word text patterns...</p>
             ) : subThemes.length > 0 ? (
               <ul>
                 {subThemes.map((theme, index) => (
@@ -543,10 +653,10 @@ export default function Home() {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">No sub-themes available</p>
+              <p className="text-gray-500">No repeating text patterns available</p>
             )
           ) : (
-            <p className="text-gray-500">Select a primary theme to view sub themes</p>
+            <p className="text-gray-500">Select a text pattern to view repeating 3 word text patterns</p>
           )}
         </div>
       </div>
@@ -555,12 +665,12 @@ export default function Home() {
 
   const renderFourGramContent = () => (
     <>
-      <h3 className={`font-julius-sans font-bold lg:text-xl text-lg py-1 ${selectedSubTheme ? 'text-zinc-100' : 'text-zinc-600'}`}>Thematic Topics</h3>
+      <h3 className={`font-julius-sans font-bold lg:text-xl text-lg py-1 ${selectedSubTheme ? 'text-zinc-100' : 'text-zinc-600'}`}>Repeating 4-word text patterns</h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
-        <div className="lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
+        <div className="lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           {selectedSubTheme ? (
             loadingThematicTopics ? (
-              <p className="text-gray-500">Loading thematic topics...</p>
+              <p className="text-gray-500">Loading repeating 4-word text patterns...</p>
             ) : thematicTopics.length > 0 ? (
               <ul>
                 {thematicTopics.map((thematicTopic, index) => (
@@ -576,10 +686,10 @@ export default function Home() {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">No thematic topics available</p>
+              <p className="text-gray-500">No repeating 4-word text patterns available</p>
             )
           ) : (
-            <p className="text-gray-500">Select a sub theme to view thematic topics</p>
+            <p className="text-gray-500">Select a repeating 3-word text pattern to view repeating 5-word text patterns</p>
           )}
         </div>
       </div>
@@ -588,12 +698,12 @@ export default function Home() {
 
   const renderFiveGramContent = () => (
     <>
-      <h3 className={`font-julius-sans font-bold lg:text-xl text-lg py-1 ${selectedThematicTopic ? 'text-zinc-100' : 'text-zinc-600'}`}>Thematic Context</h3>
+      <h3 className={`font-julius-sans font-bold lg:text-xl text-lg py-1 ${selectedThematicTopic ? 'text-zinc-100' : 'text-zinc-600'}`}>Repeating 5-word text patterns</h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
-        <div className="lg:p-4 p-3 lg:h-[30rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
+        <div className="lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           {selectedThematicTopic ? (
             loadingThematicContexts ? (
-              <p className="text-gray-500">Loading thematic contexts...</p>
+              <p className="text-gray-500">Loading repeating 5-word text patterns...</p>
             ) : thematicContexts.length > 0 ? (
               <ul>
                 {thematicContexts.map((thematicContext, index) => (
@@ -612,7 +722,7 @@ export default function Home() {
               <p className="text-gray-500">No thematic contexts available</p>
             )
           ) : (
-            <p className="text-gray-500">Select a thematic topic to view thematic contexts</p>
+            <p className="text-gray-500">Select a repeating 4-word text pattern to view repeating 5-word text patterns</p>
           )}
         </div>
       </div>
@@ -641,6 +751,43 @@ export default function Home() {
     </button>
   );
 
+  const memoizedBiGram = useMemo(() => renderBiGramContent(), [
+    gramState,
+    primaryTopics,
+    loadingPrimaryTopics,
+    openIndex,
+    primaryThemes,
+    loadingThemes,
+    subOpenIndex,
+    selectedTopic,
+  ]);
+
+  const memoizedTriGram = useMemo(() => renderTriGramContent(), [
+    gramState,
+    subThemes,
+    loadingSubThemes,
+    openIndex,
+    subOpenIndex,
+    selectedSubTheme,
+  ]);
+
+  const memoizedFourGram = useMemo(() => renderFourGramContent(), [
+    gramState,
+    thematicTopics,
+    loadingThematicTopics,
+    openIndex,
+    thematicOpenIndex,
+    selectedThematicTopic,
+  ]);
+
+  const memoizedFiveGram = useMemo(() => renderFiveGramContent(), [
+    gramState,
+    thematicContexts,
+    loadingThematicContexts,
+    fiveGramOpenIndex,
+    selectedThematicContext,
+  ]);
+
   // UI Rendering
   return (
     <>
@@ -654,6 +801,8 @@ export default function Home() {
           </div>
         ) : (
           <div className="items-center justify-items-center min-h-screen lg:px-8 md:px-6 px-6 lg:pt-10 md:pt-8 pt-7 gap-16">
+
+            {/* Header */}
             <header className="w-full">
               <h1 className="font-julius-sans lg:text-4xl md:text-3xl text-2xl text-center font-bold">Thematic Text-Pattern Searching</h1>
               <h3 className="font-julius-sans lg:text-2xl md:text-xl text-base text-center">for Al-Qur'an</h3>
@@ -662,34 +811,126 @@ export default function Home() {
 
             <main className="flex flex-col items-center w-full lg:px-8 px-1 lg:py-6 pt-4 my-0">
 
+              {/* Search Box Here */}
+              <div className="w-full lg:mb-6 lg:mt-0 mb-2 mt-2">
+                <input
+                  type="text"
+                  placeholder="Search English Text Patterns . . ."
+                  className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226]"
+                  value={searchInput ? searchInput : ""}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </div>
+
+              {/* Search Result Display */}
+              {debouncedSearch.length > 0 && (
+                <div
+                  className="search-scroll-container relative bg-[#1f2624] shadow-md rounded lg:mb-10 mb-2 lg:mt-0 mt-4 w-full"
+                  style={{ maxHeight: '30rem', overflowY: 'auto' }}
+                >
+
+                  <div className='flex flex-row justify-between items-start sticky top-0 z-20 bg-[#1f2624] px-0 shadow-xl border-[#435e43] pt-3'>
+                    <div>
+                      <h1 className='font-bold ml-5 mt-2 text-zinc-200 lg:text-base text-sm'>
+                        Search Results ( {searchedTopics.length} Patterns ) :
+                      </h1>
+                      <h2 className='font-bold ml-5 mt-2 mb-2 text-zinc-400 lg:text-sm text-sm'>
+                        Translated Keyword: {translated}
+                      </h2>
+                    </div>
+
+                    {/* Sticky scroll buttons inside scrollable area */}
+                    {grams.length > 0 && (
+                      <div className="flex justify-end pr-4 pb-4">
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => scrollToGram(currentGramIndex - 1)}
+                            disabled={currentGramIndex === 0}
+                            className="bg-[#1f2624] border border-[#3a403e] text-left text-white text-xs px-3 py-1 rounded hover:bg-[#2e442e] disabled:opacity-50 transition-colors"
+                            title="Scroll Up"
+                          >
+                            ▲
+                          </button>
+                          <button
+                            onClick={() => scrollToGram(currentGramIndex + 1)}
+                            disabled={currentGramIndex === grams.length + 2}
+                            className="bg-[#1f2624] border border-[#3a403e] text-left text-white text-xs px-3 py-1 rounded hover:bg-[#2e442e] disabled:opacity-50 transition-colors"
+                            title="Scroll Down"
+                          >
+                            ▼
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+
+                  <div className="lg:p-4 p-3 text-zinc-200 lg:text-lg text-base">
+                    {loadingThemes ? (
+                      <p className="text-gray-500 pl-2">Loading results...</p>
+                    ) : searchedTopics.length > 0 ? (
+                      <>
+                        {Object.entries(groupedTopics).map(([gram, topics], idx) => (
+                          <div key={gram} id={`gram-${idx+1}`} className="mb-4">
+                            <h3 className="text-[#90af87] font-semibold mb-2 ml-2">{gram}</h3>
+                            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0">
+                              {topics.map((topic, index) => (
+                                <li
+                                  key={index}
+                                  className="cursor-pointer py-2 px-3 border border-[#2f3a35] bg-[#161f1a] hover:bg-[#232f28] transition-colors duration-200"
+                                  onClick={() => {
+                                    toggleSublist(index, topic);
+                                    if (gram === 'Primary Words') {
+                                      setSearchInput(debouncedSearch);
+                                      setSearchTrigger(prev => !prev);
+                                    }
+                                  }}
+                                >
+                                  <div className={openIndex === index ? 'text-green-200' : 'text-gray-200'}>
+                                    <div>{topic.text}</div>
+                                    <div className="text-sm text-gray-400 mt-1">{topic.foundInGram}</div>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <p className="text-gray-500">No results found</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* N-Gram Selection */}
-              <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full text-center">
+              <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full mt-4 text-center">
 
                 {/* Bi-Gram */}
                 {/* Mobile: Render conditionally */}
-                {gramState === 'bi-gram' && <div className="sm:hidden">{renderBiGramContent()}</div>}
+                {gramState === 'bi-gram' && <div className="sm:hidden">{memoizedBiGram}</div>}
                 {/* Non-mobile: Always render */}
-                <div className="hidden sm:block">{renderBiGramContent()}</div>
+                <div className="hidden sm:block">{memoizedBiGram}</div>
 
                 {/* Tri/Four/Five Grams */}
 
                 {/* Tri-Gram */}
                 {/* Mobile: Render conditionally */}
-                {gramState === 'tri-gram' && <div className="sm:hidden">{renderTriGramContent()}</div>}
+                {gramState === 'tri-gram' && <div className="sm:hidden">{memoizedTriGram}</div>}
                 {/* Non-mobile: Always render */}
-                <div className="hidden sm:block">{renderTriGramContent()}</div>
+                <div className="hidden sm:block">{memoizedTriGram}</div>
 
                 {/* Four-Gram */}
                 {/* Mobile: Render conditionally */}
-                {gramState === 'four-gram' && <div className="sm:hidden">{renderFourGramContent()}</div>}
+                {gramState === 'four-gram' && <div className="sm:hidden">{memoizedFourGram}</div>}
                 {/* Non-mobile: Always render */}
-                <div className="hidden sm:block">{renderFourGramContent()}</div>
+                <div className="hidden sm:block">{memoizedFourGram}</div>
 
                 {/* Five-Gram */}
                 {/* Mobile: Render conditionally */}
-                {gramState === 'five-gram' && <div className="sm:hidden">{renderFiveGramContent()}</div>}
+                {gramState === 'five-gram' && <div className="sm:hidden">{memoizedFiveGram}</div>}
                 {/* Non-mobile: Always render */}
-                <div className="hidden sm:block">{renderFiveGramContent()}</div>
+                <div className="hidden sm:block">{memoizedFiveGram}</div>
 
               </div>
 
@@ -706,64 +947,18 @@ export default function Home() {
                 {gramState === 'five-gram' && renderBackButton('five-gram', 'four-gram')}
               </div>
 
-              {/* Result */}
-              <div className='w-full pt-2'>
-
-                {/* Before, Selected Pattern, After Section */}
-                <div className='w-full'>
-                  <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
-                  <div className="">
-                    <div className="flex flex-row justify-center lg:gap-4 gap-5">
-                      <div className='lg:w-[300px] w-[100px]'>
-                        <p className="lg:text-lg text-sm font-bold text-right">Before</p>
-                        <p className="lg:text-lg text-sm font-arabic text-right">
-                          {selectedAyatIndex !== null
-                            ? loadingDetails
-                              ? "Loading..."
-                              : ayatDetails?.before || "-"
-                            : "-"}
-                        </p>
-                      </div>
-                      <div className='lg:w-[300px] w-[100px] border-x-2 border-[#3a403e]'>
-                        <p className="lg:text-lg text-sm text-center font-bold">Selected Pattern</p>
-                        <p className="lg:text-lg text-sm text-center font-arabic text-green-200">
-                          <span className="block sm:inline font-normal">{  /* 'block' for small screens, 'inline' for larger screens */
-                            selectedThematicContext
-                              ? selectedThematicContext.five_gram_text // Display the five-gram text
-                              : selectedThematicTopic
-                                ? selectedThematicTopic.four_gram_text // Display the four-gram text
-                                : selectedSubTheme
-                                  ? selectedSubTheme.tri_gram_text // Display the tri-gram text
-                                  : selectedTheme
-                                    ? selectedTheme.bi_gram_text // Display the bi-gram text
-                                    : "None"
-                          }</span>
-                        </p>
-                      </div>
-                      <div className='lg:w-[300px] w-[100px]'>
-                        <p className="lg:text-lg text-sm font-bold">After</p>
-                        <p className="lg:text-lg text-sm font-arabic">
-                          {selectedAyatIndex !== null
-                            ? loadingDetails
-                              ? "Loading..."
-                              : ayatDetails?.after || "-"
-                            : "-"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
-                </div>
+              {/* Before/After & Result */}
+              <div className='w-full pt-2 pb-10'>
 
                 {/* Ayat List */}
-                <div className="lg:py-8 py-4">
+                <div className="lg:pt-10 lg:pb-10 pt-4 pb-10">
                   <div>
                     <h3 className="lg:text-left text-center font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-300">
                       {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext
-                        ? "Search Result"
+                        ? "Corresponding Ayats"
                         : loadingAyats
                           ? "Loading Ayats..."
-                          : `Search Result (Ayats Found: ${ayats.length})`}
+                          : `Corresponding Ayats ( Found: ${ayats.length} )`}
                     </h3>
                     <div className="bg-[#1f2624] shadow-md rounded py-3">
                       <div className="lg:px-4 px-3 lg:h-[25rem] h-[15rem] text-zinc-200 overflow-auto lg:text-lg text-base">
@@ -773,7 +968,7 @@ export default function Home() {
                             <hr className="w-full my-1 border-[#4a504e]"></hr>
                             <ul className=''>
                               {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext ? (
-                                <p className="text-zinc-400 py-2">Select a primary theme or higher to view Ayats.</p>
+                                <p className="text-zinc-400 py-2">Select a text pattern or n-word repeating text pattern to view Ayats.</p>
                               ) : loadingAyats ? (
                                 <p className="text-zinc-400 py-2">Loading Ayats...</p>
                               ) : ayats.length === 0 ? (
@@ -816,6 +1011,52 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Before, Selected Pattern, After Section */}
+                <div className='w-full'>
+                  <hr className="w-full lg:mt-10 mt-4 mb-3 border-zinc-500" />
+                  <div className="">
+                    <div className="flex flex-row justify-center lg:gap-4 gap-5">
+                      <div className='lg:w-[300px] w-[100px]'>
+                        <p className="lg:text-lg text-sm font-bold text-right">After</p>
+                        <p className="lg:text-lg text-sm font-arabic text-right">
+                          {selectedAyatIndex !== null
+                            ? loadingDetails
+                              ? "Loading..."
+                              : ayatDetails?.after || "-"
+                            : "-"}
+                        </p>
+                      </div>
+                      <div className='lg:w-[300px] w-[100px] border-x-2 border-[#3a403e]'>
+                        <p className="lg:text-lg text-sm text-center font-bold">Selected Pattern</p>
+                        <p className="lg:text-lg text-sm text-center font-arabic text-green-200">
+                          <span className="block sm:inline font-normal">{  /* 'block' for small screens, 'inline' for larger screens */
+                            selectedThematicContext
+                              ? selectedThematicContext.five_gram_text // Display the five-gram text
+                              : selectedThematicTopic
+                                ? selectedThematicTopic.four_gram_text // Display the four-gram text
+                                : selectedSubTheme
+                                  ? selectedSubTheme.tri_gram_text // Display the tri-gram text
+                                  : selectedTheme
+                                    ? selectedTheme.bi_gram_text // Display the bi-gram text
+                                    : "None"
+                          }</span>
+                        </p>
+                      </div>
+                      <div className='lg:w-[300px] w-[100px]'>
+                        <p className="lg:text-lg text-sm font-bold">Before</p>
+                        <p className="lg:text-lg text-sm font-arabic">
+                          {selectedAyatIndex !== null
+                            ? loadingDetails
+                              ? "Loading..."
+                              : ayatDetails?.before || "-"
+                            : "-"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
+                </div>
+
               </div>
 
               {/* Details of Selected Ayat */}
@@ -824,7 +1065,8 @@ export default function Home() {
                   <h1 className="lg:text-xl text-lg font-julius-sans font-bold lg:pt-3 pt-1">
                     Details of selected Ayat
                   </h1>
-                  <hr className="w-full lg:mt-6 mt-4 mb-3 border-zinc-500" />
+
+                  <hr className="w-full lg:mt-3 mt-2 lg:mb-6 mb-5 border-zinc-500" />
 
                   <div className="grid gap-y-2">
                     <p className="lg:text-lg text-sm">
@@ -861,16 +1103,39 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
+
+                {/* After, Pattern, Before Section Details*/}
+                {/* <div className="w-full grid lg:grid-cols-3 border-2 border-[#3a403e] rounded-lg p-4 gap-4">
+
+                  <div className='border-r-2 border-[#3a403e]'>
+                    <h1 className='text-center'>After</h1>
+                    <hr className="w-[90%] mx-auto lg:mt-3 mt-2 lg:mb-6 mb-5 border-zinc-500" />
+                  </div>
+
+                  <div>
+                    <h1 className='text-center'>Pattern</h1>
+                    <hr className="w-full mx-auto lg:mt-3 mt-2 lg:mb-6 mb-5 border-zinc-500" />
+                  </div>
+
+                  <div className='border-l-2 border-[#3a403e]'>
+                    <h1 className='text-center'>Before</h1>
+                    <hr className="w-[90%] mx-auto lg:mt-3 mt-2 lg:mb-6 mb-5 border-zinc-500" />
+                  </div>
+
+                </div> */}
+
               </div>
 
             </main>
 
+            {/* Footer */}
             <footer className="items-center justify-center w-full m-0 p-0 text-center">
               <hr className="w-full lg:mt-6 mt-6 mb-3 border-zinc-400"></hr>
               <p className="p-0 mb-3 lg:text-sm text-xs">&copy; PhD Research Project of Nazia Nishat</p>
             </footer>
           </div>
-        )}
+        )
+      }
     </>
   );
 }
