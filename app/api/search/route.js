@@ -20,7 +20,6 @@ export async function POST(request) {
       { table: 'five_grams', column: 'five_gram_text', label: '5-Word Text Patterns' },
     ];
 
-    // Check DB connection first
     const isDbConnected = await DbUtils.checkConnection();
     if (!isDbConnected) {
       return NextResponse.json({ error: 'Failed to connect to the database' }, { status: 500 });
@@ -32,8 +31,8 @@ export async function POST(request) {
 
       for (const { table, column, label } of queries) {
         const sql = `
-          SELECT id, ${column} AS text 
-          FROM ${table} 
+          SELECT id, ${column}
+          FROM ${table}
           WHERE ${column} ILIKE $1 OR ${column} ILIKE $2
         `;
         const res = await client.query(sql, [`%${searchTerms[0]}%`, `%${searchTerms[1]}%`]);
@@ -41,11 +40,13 @@ export async function POST(request) {
         results = results.concat(
           res.rows.map(row => ({
             id: row.id,
-            text: row.text,
+            [column]: row[column],
             foundInGram: label,
           }))
         );
       }
+
+      console.log('Search results:', results);
 
       return NextResponse.json({ results });
     } catch (error) {

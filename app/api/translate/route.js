@@ -5,7 +5,6 @@ const proxies = [
     'http://91.103.120.57:80',
     'http://82.102.10.253:80',
     'http://91.103.120.48:80',
-    'http://65.108.203.37:18080',
     'http://209.135.168.41:80',
     'http://91.103.120.37:80',
     'http://91.103.120.40:80',
@@ -51,6 +50,8 @@ export async function POST(request) {
         if (!text || !text.trim()) {
             return new Response(JSON.stringify({ error: 'Text is required' }), { status: 400 });
         }
+
+        console.log('Received text for translation:', text);
 
         const translatedText = await translateWithProxy(text);
 

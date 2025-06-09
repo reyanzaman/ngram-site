@@ -78,32 +78,32 @@ export default function Home() {
     }
   }
 
-function scrollToGram(idx) {
-  if (idx < 0 || idx >= grams.length + 2) return;
+  function scrollToGram(idx) {
+    if (idx < 0 || idx >= grams.length + 2) return;
 
-  const element = document.getElementById(`gram-${idx}`);
-  const container = document.querySelector('.search-scroll-container');
+    const element = document.getElementById(`gram-${idx}`);
+    const container = document.querySelector('.search-scroll-container');
 
-  if (element && container) {
-    // Set offset based on screen width (you can tweak breakpoints and values)
-    const isMobile = window.innerWidth <= 768;
-    const offset = isMobile ? 100 : 100;
+    if (element && container) {
+      // Set offset based on screen width (you can tweak breakpoints and values)
+      const isMobile = window.innerWidth <= 768;
+      const offset = isMobile ? 100 : 100;
 
-    let scrollTarget = element.offsetTop - offset;
+      let scrollTarget = element.offsetTop - offset;
 
-    // Clamp scrollTarget between 0 and max scroll
-    const maxScrollTop = container.scrollHeight - container.clientHeight;
-    if (scrollTarget < 0) scrollTarget = 0;
-    if (scrollTarget > maxScrollTop) scrollTarget = maxScrollTop;
+      // Clamp scrollTarget between 0 and max scroll
+      const maxScrollTop = container.scrollHeight - container.clientHeight;
+      if (scrollTarget < 0) scrollTarget = 0;
+      if (scrollTarget > maxScrollTop) scrollTarget = maxScrollTop;
 
-    container.scrollTo({
-      top: scrollTarget,
-      behavior: 'smooth',
-    });
+      container.scrollTo({
+        top: scrollTarget,
+        behavior: 'smooth',
+      });
 
-    setCurrentGramIndex(idx);
+      setCurrentGramIndex(idx);
+    }
   }
-}
 
   // Debounce Search Input
   useEffect(() => {
@@ -595,7 +595,7 @@ function scrollToGram(idx) {
           </h3>
         </div>
         <div className="bg-[#1f2624] shadow-md rounded py-3">
-          <div 
+          <div
             ref={oneGramContainerRef}
             className="rounded lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base"
           >
@@ -684,10 +684,14 @@ function scrollToGram(idx) {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">No repeating text patterns available</p>
+              <>
+                <p className="text-gray-500">No repeating text patterns available</p>
+              </>
             )
           ) : (
-            <p className="text-gray-500">Select a text pattern to view repeating 3 word text patterns</p>
+            <>
+              <p className="text-gray-500">Select a text pattern to view repeating 3 word text patterns</p>
+            </>
           )}
         </div>
       </div>
@@ -860,6 +864,7 @@ function scrollToGram(idx) {
                   style={{ maxHeight: '30rem', overflowY: 'auto' }}
                 >
 
+                  {/* Headers */}
                   <div className='flex flex-row justify-between items-start sticky top-0 z-20 bg-[#1f2624] px-0 shadow-xl border-[#435e43] pt-3'>
                     <div>
                       <h1 className='font-bold ml-5 mt-2 text-zinc-200 lg:text-base text-sm'>
@@ -902,7 +907,7 @@ function scrollToGram(idx) {
                     ) : searchedTopics.length > 0 ? (
                       <>
                         {Object.entries(groupedTopics).map(([gram, topics], idx) => (
-                          <div key={gram} id={`gram-${idx+1}`} className="mb-4">
+                          <div key={gram} id={`gram-${idx + 1}`} className="mb-4">
                             <h3 className="text-[#90af87] font-semibold mb-2 ml-2">{gram}</h3>
                             <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0">
                               {topics.map((topic, index) => (
@@ -910,15 +915,52 @@ function scrollToGram(idx) {
                                   key={index}
                                   className="cursor-pointer py-2 px-3 border border-[#2f3a35] bg-[#161f1a] hover:bg-[#232f28] transition-colors duration-200"
                                   onClick={() => {
-                                    toggleSublist(index, topic);
                                     if (gram === 'Primary Words') {
-                                      setSearchInput(debouncedSearch);
-                                      setSearchTrigger(prev => !prev);
+                                      const sortedIndex = primaryTopics
+                                        .slice()
+                                        .sort((a, b) => a.topic_stemmed.localeCompare(b.topic_stemmed))
+                                        .findIndex((t) => t.id === topic.id);
+                                      toggleSublist(sortedIndex, topic);
+                                    } else if (gram === '2-Word Text Patterns') {
+                                      const matchedIndex = primaryThemes.findIndex(t => t.id === topic.id);
+                                      console.log("Matched Index:", matchedIndex, "Topic ID:", topic.id);
+                                      toggleSubThemes(matchedIndex, topic);
+                                    } else if (gram === '3-Word Text Patterns') {
+                                      const matchedIndex = subThemes.findIndex(t => t.id === topic.id);
+                                      toggleThematicTopics(matchedIndex, topic);
+                                    } else if (gram === '4-Word Text Patterns') {
+                                      const matchedIndex = thematicTopics.findIndex(t => t.id === topic.id);
+                                      toggleThematicContext(matchedIndex, topic);
+                                    } else if (gram === '5-Word Text Patterns') {
+                                      const matchedIndex = thematicContexts.findIndex(t => t.id === topic.id);
+                                      toggleFiveGram(matchedIndex, topic);
                                     }
                                   }}
                                 >
-                                  <div className={openIndex === index ? 'text-green-200' : 'text-gray-200'}>
-                                    <div>{topic.text}</div>
+                                  <div
+                                    className={
+                                      [
+                                        selectedTopic,
+                                        selectedTheme,
+                                        selectedSubTheme,
+                                        selectedThematicTopic,
+                                        selectedThematicContext,
+                                      ].some(sel => sel?.id === topic.id)
+                                        ? 'text-green-200'
+                                        : 'text-gray-200'
+                                    }
+                                  >
+                                    <div className="whitespace-pre-wrap break-words">
+                                      {
+                                        // Find the text field dynamically by checking known keys
+                                        topic.topic_text ??
+                                        topic.bi_gram_text ??
+                                        topic.tri_gram_text ??
+                                        topic.four_gram_text ??
+                                        topic.five_gram_text ??
+                                        ''
+                                      }
+                                    </div>
                                     <div className="text-sm text-gray-400 mt-1">{topic.foundInGram}</div>
                                   </div>
                                 </li>
@@ -933,6 +975,40 @@ function scrollToGram(idx) {
                   </div>
                 </div>
               )}
+
+              {/* Selected Pattern Display */}
+              {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext && debouncedSearch.length < 1 ? (
+                <div className="w-full my-0 py-0"></div>
+              ) : (
+                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-4 lg:mb-14 mt-6 mb-6 shadow-xl flex lg:flex-row flex-col gap-5 items-center justify-between">
+                  <h1 className='lg:text-xl text-lg text-center font-bold'>
+                    <span>Selected Pattern: </span>
+                    <span className="block sm:inline font-normal">
+                      {  /* 'block' for small screens, 'inline' for larger screens */
+                        selectedThematicContext
+                          ? selectedThematicContext.five_gram_text // Display the five-gram text
+                          : selectedThematicTopic
+                            ? selectedThematicTopic.four_gram_text // Display the four-gram text
+                            : selectedSubTheme
+                              ? selectedSubTheme.tri_gram_text // Display the tri-gram text
+                              : selectedTheme
+                                ? selectedTheme.bi_gram_text // Display the bi-gram text
+                                : "None"
+                      }</span>
+                  </h1>
+
+                  {/* Clear Button */}
+                  <button
+                    className="ml-1 text-zinc-100 p-1 hover:text-green-200 scale-125"
+                    onClick={() => toggleSublist(null, null)}
+                  >
+                    <div className='bg-[#9b492b] py-[2.5px] px-2 rounded text-xs hover:bg-[#b55a3c] transition-colors duration-200'>
+                      Clear
+                    </div>
+                  </button>
+                </div>
+              )}
+
 
               {/* N-Gram Selection */}
               <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full mt-4 text-center">
@@ -978,7 +1054,7 @@ function scrollToGram(idx) {
                 {gramState === 'five-gram' && renderBackButton('five-gram', 'four-gram')}
               </div>
 
-              {/* Before/After & Result */}
+              {/* Before/After & Ayat List */}
               <div className='w-full pt-2 pb-10'>
 
                 {/* Ayat List */}
