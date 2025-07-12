@@ -4,20 +4,16 @@ import { pool } from '@/app/api/database/db';
 
 export async function POST(request) {
   try {
-    const { text, translatedText } = await request.json();
+    const { text } = await request.json();
 
     if (!text || !text.trim()) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
     }
 
-    const searchTerms = [text, translatedText || text];
+    const searchTerms = [text];
 
     const queries = [
-      { table: 'primary_topics', column: 'topic_text', label: 'Primary Words' },
       { table: 'bi_grams', column: 'bi_gram_text', label: '2-Word Text Patterns' },
-      { table: 'tri_grams', column: 'tri_gram_text', label: '3-Word Text Patterns' },
-      { table: 'four_grams', column: 'four_gram_text', label: '4-Word Text Patterns' },
-      { table: 'five_grams', column: 'five_gram_text', label: '5-Word Text Patterns' },
     ];
 
     const isDbConnected = await DbUtils.checkConnection();

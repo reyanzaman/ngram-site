@@ -10,17 +10,17 @@ export async function GET(req) {
             return NextResponse.json({ error: "Failed to connect to the database" }, { status: 500 });
         }
 
-        // SQL query for retrieving data
-        const getQuery = `SELECT * FROM primary_topics_link_bi_grams;`;
+        // SQL query to get all bi-grams
+        const getQuery = `SELECT * FROM bi_grams;`;
 
         const client = await pool.connect();
         try {
-            console.log("Starting database transaction...");
+            console.log("Getting all bi-grams...");
             const result = await client.query(getQuery);
-            const links = result.rows;
+            const biGrams = result.rows;
 
-            console.log("Primary Topics Links retrieved successfully!");
-            return NextResponse.json({ links });
+            console.log("All bi-grams retrieved successfully!");
+            return NextResponse.json({ biGrams });
         } catch (error) {
             console.error("Error fetching data:", error);
             return NextResponse.json({ error: "Error fetching data" }, { status: 500 });

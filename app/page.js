@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GrFormNext, GrFormPrevious, GrFormClose } from "react-icons/gr";
-import { translateToArabic } from './utils/translate.js';
 
 export default function Home() {
 
@@ -43,7 +42,6 @@ export default function Home() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loadingPrimaryTopics, setLoadingPrimaryTopics] = useState(true);
   const [searchedTopics, setSearchedTopics] = useState([]);
-  const [translated, setTranslated] = useState('');
   const [searchTrigger, setSearchTrigger] = useState(false);
 
   const oneGramContainerRef = useRef(null);
@@ -58,12 +56,12 @@ export default function Home() {
   const [currentGramIndex, setCurrentGramIndex] = React.useState(0);
   const grams = Object.keys(groupedTopics);
 
-  async function fetchSearchResults(originalText, translatedText) {
+  async function fetchSearchResults(originalText) {
     try {
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: originalText, translatedText }),
+        body: JSON.stringify({ text: originalText }),
       });
 
       if (!response.ok) {
@@ -123,101 +121,13 @@ export default function Home() {
     async function performSearch() {
       setLoadingThemes(true);
       console.log("Searching for:", debouncedSearch);
-
-      let translatedText = '';
-
-      try {
-        translatedText = await translateToArabic(debouncedSearch);
-        setTranslated(translatedText);
-      } catch (err) {
-        console.error('Translation failed:', err);
-        alert('Translation failed. Please try again later.');
-        setLoadingThemes(false);
-        return;
-      }
-
-      console.log("Translated to Arabic:", translatedText);
-
-      const results = await fetchSearchResults(debouncedSearch, translatedText);
+      const results = await fetchSearchResults(debouncedSearch);
       setSearchedTopics(results);
       setLoadingThemes(false);
     }
 
     performSearch();
   }, [debouncedSearch, searchTrigger, primaryTopics, primaryThemes]);
-
-  // Fetch One Gram
-  useEffect(() => {
-    const fetchPrimaryTopics = async () => {
-      setLoading(true);
-      setLoadingPrimaryTopics(true);
-      const cachedData = localStorage.getItem('primary-topics');
-
-      // If data is cached, use it
-      if (cachedData) {
-        setPrimaryTopics(JSON.parse(cachedData));
-        setLoading(false);
-        setLoadingPrimaryTopics(false);
-        return;
-      }
-
-      // Otherwise, fetch from API
-      try {
-        const res = await fetch("/api/get/primary-topics", {
-          method: "GET",
-        });
-        const data = await res.json();
-
-        if (res.ok) {
-          setPrimaryTopics(data.topics);
-          // Cache the fetched data in localStorage for future use
-          localStorage.setItem('primary-topics', JSON.stringify(data.topics));
-        } else {
-          console.error(data.error || "Error retrieving data.");
-        }
-      } catch (error) {
-        console.error("Frontend Primary Topic Fetching Error:", error);
-      } finally {
-        setLoading(false);
-        setLoadingPrimaryTopics(false);
-      }
-    };
-
-    const fetchtopiclinktheme = async () => {
-      setLoading(true);
-      const cachedData = localStorage.getItem('topic-link-bigram');
-
-      // If data is cached, use it
-      if (cachedData) {
-        setOneGramsLinkBiGrams(JSON.parse(cachedData));
-        setLoading(false);
-        return;
-      }
-
-      // Otherwise, fetch from API
-      try {
-        const res = await fetch("/api/get/primary-topics-link-bi-grams", {
-          method: "GET",
-        });
-        const data = await res.json();
-
-        if (res.ok) {
-          setOneGramsLinkBiGrams(data.links);
-          // Cache the fetched data in localStorage for future use
-          localStorage.setItem('topic-link-bigram', JSON.stringify(data.links));
-        } else {
-          console.error(data.error || "Error retrieving data.");
-        }
-      } catch (error) {
-        console.error("Frontend Topic Link BiGram Fetching Error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPrimaryTopics();
-    fetchtopiclinktheme();
-  }, []);
 
   // Fetch Ayats
   useEffect(() => {
@@ -320,52 +230,10 @@ export default function Home() {
     }
   }, [openIndex]);
 
-  // Toggle One Gram
-  const toggleSublist = (index, topic) => {
-    const container = oneGramContainerRef.current;
-
-    if (container && openIndex === null) {
-      setOneGramScrollPos(container.scrollTop); // Save current scroll before opening
-    }
-
-    if (topic === null) {
-      setSelectedTopic(null);
-      setOpenIndex(null);
-      setThematicContexts([]);
-    } else {
-      const isSameIndex = openIndex === index;
-
-      if (isSameIndex) {
-        setSelectedTopic(null);
-        setOpenIndex(null);
-        setThematicContexts([]);
-      } else {
-        setPrimaryThemes([]);  // Clear old data instantly
-        setLoadingThemes(true); // Show loading message
-        setSelectedTopic(topic);
-        setOpenIndex(index);
-        fetchPrimaryThemes(topic.id);
-      }
-    }
-
-    // Reset all deeper levels
-    setSelectedAyatIndex(null);
-    setAyatDetails(null);
-    setSelectedTheme(null);
-    setSelectedSubTheme(null);
-    setSelectedThematicTopic(null);
-    setSelectedThematicContext(null);
-    setSubOpenIndex(null);
-    setThematicOpenIndex(null);
-    setContextOpenIndex(null);
-    setfiveGramOpenIndex(null);
-  };
-
   // Toggle Bi Gram
   const toggleSubThemes = (subIndex, theme) => {
     const isSameIndex = subOpenIndex === subIndex;
 
-    // If it's the same index, deselect it and reset higher levels
     if (isSameIndex) {
       setSelectedAyatIndex(null);
       setSubOpenIndex(null);
@@ -378,11 +246,9 @@ export default function Home() {
       setfiveGramOpenIndex(null);
       setThematicContexts([]);
     } else {
-      // If it's a new sub-theme, select it and fetch data
       setSubOpenIndex(subIndex);
       setSelectedTheme(theme);
 
-      // Clear deeper selections and show loading message
       setSelectedAyatIndex(null);
       setAyatDetails(null);
       setSelectedSubTheme(null);
@@ -392,10 +258,13 @@ export default function Home() {
       setContextOpenIndex(null);
       setfiveGramOpenIndex(null);
 
-      setSubThemes([]);  // Clear old sub-themes
-      setLoadingSubThemes(true);  // Show loading message
+      setSubThemes([]);
+      setLoadingSubThemes(true);
 
-      fetchSubThemes(theme.id);
+      // Only call fetchSubThemes if theme is not null
+      if (theme) {
+        fetchSubThemes(theme.id);
+      }
     }
   };
 
@@ -484,25 +353,12 @@ export default function Home() {
   };
 
   // Fetch Bi Gram
-  const fetchPrimaryThemes = async (topicId) => {
+  const fetchPrimaryThemes = async () => {
     setLoadingThemes(true);
     try {
-      const linkedBiGrams = oneGramsLinkBiGrams
-        .filter(link => link.topic_id === topicId)
-        .map(link => link.bi_gram_id);
-
-      if (linkedBiGrams.length === 0) {
-        console.warn("No linked bi-grams found for topic:", topicId);
-        setPrimaryThemes([]);
-        setLoadingThemes(false);
-        return;
-      }
-
-      // Use POST request with JSON body
       const res = await fetch(`/api/get/primary-themes`, {
-        method: "POST",
+        method: "GET",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ biGrams: linkedBiGrams })
       });
 
       const data = await res.json();
@@ -517,6 +373,11 @@ export default function Home() {
     }
     setLoadingThemes(false);
   };
+
+  // Fetch Bi Gram at beginning
+  useEffect(() => {
+    fetchPrimaryThemes();
+  }, []);
 
   // Fetch Tri Gram
   const fetchSubThemes = async (topicId) => {
@@ -570,94 +431,42 @@ export default function Home() {
   };
 
   // Components
-
-  const renderBiGramContent = () => {
-    // Sort primaryTopics based on topic_stemmed
-    const sortedTopics = [...primaryTopics].sort((a, b) =>
-      a.topic_stemmed.localeCompare(b.topic_stemmed)
-    );
-
-    return (
-      <>
-        <div className='min-h-16 flex items-center justify-center'>
-          <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-100">
-            {selectedTopic ? "Text Patterns" : "Primary Words"}
-
-            {/* Clear Button */}
-            {selectedTopic && (
-              <button
-                className="ml-1 text-zinc-100 p-1 hover:text-green-200 translate-y-[3px] scale-125"
-                onClick={() => toggleSublist(null, null)}
-              >
-                <GrFormClose size={20} />
-              </button>
-            )}
-          </h3>
+  const renderBiGramContent = () => (
+    <>
+      <div className='min-h-16 flex items-center justify-center'>
+        <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-100">
+          Text Patterns
+        </h3>
+      </div>
+      <div className="bg-[#1f2624] shadow-md rounded py-3">
+        <div
+          ref={oneGramContainerRef}
+          className="rounded lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base"
+        >
+          {loadingThemes ? (
+            <p className="text-gray-500">Loading text patterns...</p>
+          ) : primaryThemes.length > 0 ? (
+            <ul>
+              {primaryThemes.map((theme, index) => (
+                <li key={index} className="py-1">
+                  <div
+                    className={`cursor-pointer hover:bg-[#28302d] rounded px-2 ${subOpenIndex === index ? "text-green-200" : "text-gray-200"
+                      }`}
+                    onClick={() => toggleSubThemes(index, theme)}
+                  >
+                    {theme.bi_gram_text}
+                  </div>
+                  <hr className="w-1/2 mx-auto my-1 border-[#3a403e]" />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500">No themes available</p>
+          )}
         </div>
-        <div className="bg-[#1f2624] shadow-md rounded py-3">
-          <div
-            ref={oneGramContainerRef}
-            className="rounded lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base"
-          >
-            {loadingPrimaryTopics ? (
-              <p className="text-gray-500">Loading Primary Words...</p>
-            ) : (
-              <ul>
-                {/* Column Headers */}
-                <div className="grid grid-cols-2 gap-x-4 px-4 pb-2 mb-2 border-b-2 border-[#3a403e] text-center font-semibold">
-                  <p className="w-full">Stemmed</p>
-                  <p className="w-full">Words</p>
-                </div>
-
-                {sortedTopics.map((topic, index) =>
-                  (openIndex === null || openIndex === index) && (
-                    <li key={index} className="py-1 cursor-pointer">
-                      <div
-                        className={`${openIndex === index ? "text-green-200" : "text-gray-200"}`}
-                        onClick={() => toggleSublist(index, topic)}
-                      >
-                        {/* Topic Row */}
-                        <div className="grid grid-cols-2 gap-x-4 px-4 text-center">
-                          <p className="w-full">{topic.topic_stemmed}</p>
-                          <p className="w-full">{topic.topic_text}</p>
-                        </div>
-                      </div>
-                      <hr className="w-full my-1 border-[#3a403e]" />
-
-                      {/* Sublist for Primary Themes */}
-                      {openIndex === index && (
-                        <div>
-                          <p className="w-full mb-2 mt-4 border-b-2 border-[#3a403e] cursor-auto">Text Patterns</p>
-                          <ul className="mt-1 text-gray-400">
-                            {loadingThemes ? (
-                              <p className="text-gray-500">Loading text patterns...</p>
-                            ) : primaryThemes.length > 0 ? (
-                              primaryThemes.map((theme, subIndex) => (
-                                <li
-                                  key={`${index}-${subIndex}`}
-                                  className={`${subOpenIndex === subIndex ? "text-green-200 py-1" : "text-gray-200 py-1"}`}
-                                  onClick={() => toggleSubThemes(subIndex, theme)}
-                                >
-                                  {theme.bi_gram_text}
-                                  <hr className="w-1/2 mx-auto my-1 border-[#3a403e]" />
-                                </li>
-                              ))
-                            ) : (
-                              <p className="text-gray-500">No themes available</p>
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                    </li>
-                  )
-                )}
-              </ul>
-            )}
-          </div>
-        </div>
-      </>
-    );
-  };
+      </div>
+    </>
+  );
 
   const renderTriGramContent = () => (
     <>
@@ -674,7 +483,7 @@ export default function Home() {
                 {subThemes.map((theme, index) => (
                   <li key={index} className="py-1 cursor-pointer">
                     <div
-                      className={`${thematicOpenIndex === index ? "text-green-200" : "text-gray-200"}`}
+                      className={`${thematicOpenIndex === index ? "text-green-200" : "text-gray-200"} hover:bg-[#28302d]`}
                       onClick={() => toggleThematicTopics(index, theme)}
                     >
                       {theme.tri_gram_text}
@@ -711,7 +520,7 @@ export default function Home() {
                 {thematicTopics.map((thematicTopic, index) => (
                   <li key={index} className="py-1 cursor-pointer">
                     <div
-                      className={`${contextOpenIndex === index ? "text-green-200" : "text-gray-200"}`}
+                      className={`${contextOpenIndex === index ? "text-green-200" : "text-gray-200"} hover:bg-[#28302d]`}
                       onClick={() => toggleThematicContext(index, thematicTopic)}
                     >
                       {thematicTopic.four_gram_text}
@@ -744,7 +553,7 @@ export default function Home() {
                 {thematicContexts.map((thematicContext, index) => (
                   <li key={index} className="py-1 cursor-pointer">
                     <div
-                      className={`${fiveGramOpenIndex === index ? "text-green-200" : "text-gray-200"}`}
+                      className={`${fiveGramOpenIndex === index ? "text-green-200" : "text-gray-200"} hover:bg-[#28302d]`}
                       onClick={() => toggleFiveGram(index, thematicContext)}
                     >
                       {thematicContext.five_gram_text}
@@ -870,9 +679,6 @@ export default function Home() {
                       <h1 className='font-bold ml-5 mt-2 text-zinc-200 lg:text-base text-sm'>
                         Search Results ( {searchedTopics.length} Patterns ) :
                       </h1>
-                      <h2 className='font-bold ml-5 mt-2 mb-2 text-zinc-400 lg:text-sm text-sm'>
-                        Translated Keyword: {translated}
-                      </h2>
                     </div>
 
                     {/* Sticky scroll buttons inside scrollable area */}
@@ -915,13 +721,7 @@ export default function Home() {
                                   key={index}
                                   className="cursor-pointer py-2 px-3 border border-[#2f3a35] bg-[#161f1a] hover:bg-[#232f28] transition-colors duration-200"
                                   onClick={() => {
-                                    if (gram === 'Primary Words') {
-                                      const sortedIndex = primaryTopics
-                                        .slice()
-                                        .sort((a, b) => a.topic_stemmed.localeCompare(b.topic_stemmed))
-                                        .findIndex((t) => t.id === topic.id);
-                                      toggleSublist(sortedIndex, topic);
-                                    } else if (gram === '2-Word Text Patterns') {
+                                    if (gram === '2-Word Text Patterns') {
                                       const matchedIndex = primaryThemes.findIndex(t => t.id === topic.id);
                                       console.log("Matched Index:", matchedIndex, "Topic ID:", topic.id);
                                       toggleSubThemes(matchedIndex, topic);
@@ -980,7 +780,7 @@ export default function Home() {
               {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext && debouncedSearch.length < 1 ? (
                 <div className="w-full my-0 py-0"></div>
               ) : (
-                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-4 lg:mb-14 mt-6 mb-6 shadow-xl flex lg:flex-row flex-col gap-5 items-center justify-between">
+                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-4 lg:mb-6 mt-6 mb-6 shadow-xl flex lg:flex-row flex-col gap-5 items-center justify-between">
                   <h1 className='lg:text-xl text-lg text-center font-bold'>
                     <span>Selected Pattern: </span>
                     <span className="block sm:inline font-normal">
@@ -1000,15 +800,14 @@ export default function Home() {
                   {/* Clear Button */}
                   <button
                     className="ml-1 text-zinc-100 p-1 hover:text-green-200 scale-125"
-                    onClick={() => toggleSublist(null, null)}
+                    onClick={() => toggleSubThemes(null, null)}
                   >
-                    <div className='bg-[#9b492b] py-[2.5px] px-2 rounded text-xs hover:bg-[#b55a3c] transition-colors duration-200'>
+                    <div className='bg-[#405c13] py-[2.5px] px-2 rounded text-xs hover:bg-[#b55a3c] transition-colors duration-200'>
                       Clear
                     </div>
                   </button>
                 </div>
               )}
-
 
               {/* N-Gram Selection */}
               <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full mt-4 text-center">
