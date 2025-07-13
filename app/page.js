@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GrFormNext, GrFormPrevious, GrFormClose } from "react-icons/gr";
+import ArabicKeyboard from '@/app/utils/keyboard';
 
 export default function Home() {
 
@@ -43,6 +44,7 @@ export default function Home() {
   const [loadingPrimaryTopics, setLoadingPrimaryTopics] = useState(true);
   const [searchedTopics, setSearchedTopics] = useState([]);
   const [searchTrigger, setSearchTrigger] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   const oneGramContainerRef = useRef(null);
   const [oneGramScrollPos, setOneGramScrollPos] = useState(0);
@@ -120,7 +122,6 @@ export default function Home() {
 
     async function performSearch() {
       setLoadingThemes(true);
-      console.log("Searching for:", debouncedSearch);
       const results = await fetchSearchResults(debouncedSearch);
       setSearchedTopics(results);
       setLoadingThemes(false);
@@ -654,15 +655,39 @@ export default function Home() {
             <main className="flex flex-col items-center w-full lg:px-8 px-1 lg:py-6 pt-4 my-0">
 
               {/* Search Box Here */}
-              <div className="w-full lg:mb-6 lg:mt-0 mb-2 mt-2">
-                <input
-                  type="text"
-                  placeholder="Search English Text Patterns . . ."
-                  className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226]"
-                  value={searchInput ? searchInput : ""}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                />
-              </div>
+              <>
+                <div className="w-full lg:mb-6 lg:mt-0 mb-2 mt-2 flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Search Arabic Text Patterns . . ."
+                    className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226]"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setKeyboardOpen((v) => !v)}
+                    aria-label="Toggle Keyboard"
+                    className={`p-2 rounded border border-[#3a403e] transition
+                              ${keyboardOpen ? 'bg-[#294a32]' : 'bg-[#141a17]'}
+                              text-zinc-100 hover:bg-[#1f2624]`}
+                    style={{ minWidth: 38, minHeight: 38 }}
+                  >
+                    {/* Simple keyboard SVG icon */}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="7" width="18" height="10" rx="2" stroke="#e0e0e0" strokeWidth="1.7" />
+                      <rect x="7" y="11" width="2" height="2" rx="0.5" fill="#e0e0e0" />
+                      <rect x="11" y="11" width="2" height="2" rx="0.5" fill="#e0e0e0" />
+                      <rect x="15" y="11" width="2" height="2" rx="0.5" fill="#e0e0e0" />
+                    </svg>
+                  </button>
+                </div>
+                {keyboardOpen && (
+                  <div className='mb-6 w-full mx-auto'>
+                    <ArabicKeyboard searchInput={searchInput} setSearchInput={setSearchInput} />
+                  </div>
+                )}
+              </>
 
               {/* Search Result Display */}
               {debouncedSearch.length > 0 && (
@@ -674,35 +699,10 @@ export default function Home() {
                   {/* Headers */}
                   <div className='flex flex-row justify-between items-start sticky top-0 z-20 bg-[#1f2624] px-0 shadow-xl border-[#435e43] pt-3'>
                     <div>
-                      <h1 className='font-bold ml-5 mt-2 text-zinc-200 lg:text-base text-sm'>
+                      <h1 className='font-bold ml-5 mt-2 mb-4 text-zinc-200 lg:text-base text-sm'>
                         Search Results ( {searchedTopics.length} Patterns ) :
                       </h1>
                     </div>
-
-                    {/* Sticky scroll buttons inside scrollable area */}
-                    {grams.length > 0 && (
-                      <div className="flex justify-end pr-4 pb-4">
-                        <div className="flex flex-col gap-2">
-                          <button
-                            onClick={() => scrollToGram(currentGramIndex - 1)}
-                            disabled={currentGramIndex === 0}
-                            className="bg-[#1f2624] border border-[#3a403e] text-left text-white text-xs px-3 py-1 rounded hover:bg-[#2e442e] disabled:opacity-50 transition-colors"
-                            title="Scroll Up"
-                          >
-                            ▲
-                          </button>
-                          <button
-                            onClick={() => scrollToGram(currentGramIndex + 1)}
-                            disabled={currentGramIndex === grams.length + 2}
-                            className="bg-[#1f2624] border border-[#3a403e] text-left text-white text-xs px-3 py-1 rounded hover:bg-[#2e442e] disabled:opacity-50 transition-colors"
-                            title="Scroll Down"
-                          >
-                            ▼
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
                   </div>
 
                   <div className="lg:p-4 p-3 text-zinc-200 lg:text-lg text-base">
@@ -721,7 +721,6 @@ export default function Home() {
                                   onClick={() => {
                                     if (gram === '2-Word Text Patterns') {
                                       const matchedIndex = primaryThemes.findIndex(t => t.id === topic.id);
-                                      console.log("Matched Index:", matchedIndex, "Topic ID:", topic.id);
                                       toggleSubThemes(matchedIndex, topic);
                                     } else if (gram === '3-Word Text Patterns') {
                                       const matchedIndex = subThemes.findIndex(t => t.id === topic.id);
@@ -778,7 +777,7 @@ export default function Home() {
               {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext && debouncedSearch.length < 1 ? (
                 <div className="w-full my-0 py-0"></div>
               ) : (
-                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-4 lg:mb-6 mt-6 mb-6 shadow-xl flex lg:flex-row flex-col gap-5 items-center justify-between">
+                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-0 lg:mb-6 mt-6 mb-6 shadow-xl flex lg:flex-row flex-col gap-5 items-center justify-between">
                   <h1 className='lg:text-xl text-lg text-center font-bold'>
                     <span>Selected Pattern: </span>
                     <span className="block sm:inline font-normal">
@@ -800,7 +799,7 @@ export default function Home() {
                     className="ml-1 text-zinc-100 p-1 hover:text-green-200 scale-125"
                     onClick={() => toggleSubThemes(null, null)}
                   >
-                    <div className='bg-[#405c13] py-[2.5px] px-2 rounded text-xs hover:bg-[#b55a3c] transition-colors duration-200'>
+                    <div className='bg-[#405c13] py-[2.5px] px-2 rounded text-xs hover:bg-[#4f7422] transition-colors duration-200'>
                       Clear
                     </div>
                   </button>

@@ -42,7 +42,7 @@ export async function POST(request) {
         );
       }
 
-      console.log('Search results:', results);
+      // console.log('Search results:', results);
 
       return NextResponse.json({ results });
     } catch (error) {
