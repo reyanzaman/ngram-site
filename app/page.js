@@ -433,11 +433,9 @@ export default function Home() {
   // Components
   const renderBiGramContent = () => (
     <>
-      <div className='min-h-16 flex items-center justify-center'>
-        <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-100">
-          Text Patterns
-        </h3>
-      </div>
+      <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-100">
+        Repeating 2-Word Text Patterns
+      </h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div
           ref={oneGramContainerRef}
@@ -810,7 +808,7 @@ export default function Home() {
               )}
 
               {/* N-Gram Selection */}
-              <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full mt-4 text-center">
+              <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full mt-4 text-center items-center">
 
                 {/* Bi-Gram */}
                 {/* Mobile: Render conditionally */}
