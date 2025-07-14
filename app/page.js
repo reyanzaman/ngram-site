@@ -232,6 +232,7 @@ export default function Home() {
 
       setSubThemes([]);
       setLoadingSubThemes(true);
+      setGramState('bi-gram');
 
       // Only call fetchSubThemes if theme is not null
       if (theme) {
@@ -644,7 +645,7 @@ export default function Home() {
                 <div className="relative w-full">
                   <input
                     type="text"
-                    placeholder="Search Arabic Text Patterns . . ."
+                    placeholder="Search Text Patterns . . ."
                     className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226] pr-10"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
