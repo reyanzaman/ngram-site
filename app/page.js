@@ -46,7 +46,6 @@ export default function Home() {
 
   const oneGramContainerRef = useRef(null);
   const biGramRefs = useRef({});
-  const [oneGramScrollPos, setOneGramScrollPos] = useState(0);
 
   const groupedTopics = searchedTopics.reduce((acc, topic) => {
     if (!acc[topic.foundInGram]) acc[topic.foundInGram] = [];
@@ -76,9 +75,14 @@ export default function Home() {
 
   // Scrolls bi-gram list
   const scrollToBiGram = (themeId) => {
+    const container = oneGramContainerRef.current;
     const el = biGramRefs.current[themeId];
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (container && el) {
+      const offset = el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+      container.scrollTo({
+        top: offset, // try without behavior on mobile if needed
+        behavior: 'smooth',
+      });
     }
   };
 
@@ -195,19 +199,6 @@ export default function Home() {
     fetchAyatDetails();
   }, [selectedAyatIndex]);
 
-  // Scroll to One Gram Position
-  useEffect(() => {
-    if (openIndex === null) {
-      const timer = setTimeout(() => {
-        const container = oneGramContainerRef.current;
-        if (container) {
-          container.scrollTop = oneGramScrollPos;
-        }
-      }, 0); // no need for long delay
-      return () => clearTimeout(timer);
-    }
-  }, [openIndex]);
-
   // Toggle Bi Gram
   const toggleSubThemes = (subIndex, theme) => {
     const isSameIndex = subOpenIndex === subIndex;
@@ -223,6 +214,8 @@ export default function Home() {
       setContextOpenIndex(null);
       setfiveGramOpenIndex(null);
       setThematicContexts([]);
+      setLoadingThematicContexts(false);
+      setGramState('bi-gram');
     } else {
       setSubOpenIndex(subIndex);
       setSelectedTheme(theme);
@@ -235,6 +228,7 @@ export default function Home() {
       setThematicOpenIndex(null);
       setContextOpenIndex(null);
       setfiveGramOpenIndex(null);
+      setThematicContexts([]);
 
       setSubThemes([]);
       setLoadingSubThemes(true);
@@ -242,6 +236,7 @@ export default function Home() {
       // Only call fetchSubThemes if theme is not null
       if (theme) {
         fetchSubThemes(theme.id);
+        setGramState('tri-gram');
       }
     }
   };
@@ -260,6 +255,7 @@ export default function Home() {
       setContextOpenIndex(null);
       setfiveGramOpenIndex(null);
       setThematicContexts([]);
+      setGramState('bi-gram');
     } else {
       // If it's a new thematic topic, select it and fetch data
       setThematicOpenIndex(thematicIndex);
@@ -277,6 +273,7 @@ export default function Home() {
       setLoadingThematicTopics(true);  // Show loading message
 
       fetchThematicTopics(theme.id);
+      setGramState('four-gram');
     }
   };
 
@@ -293,6 +290,7 @@ export default function Home() {
       setfiveGramOpenIndex(null);
       setThematicContexts([]);
       setLoadingThematicContexts(false);
+      setGramState('tri-gram');
     } else {
       // If it's a new thematic context, select it and fetch data
       setContextOpenIndex(contextIndex);
@@ -308,6 +306,7 @@ export default function Home() {
       setLoadingThematicContexts(true);  // Show loading message
 
       fetchThematicContext(themeTopic.id);
+      setGramState('five-gram');
     }
   };
 
@@ -470,7 +469,7 @@ export default function Home() {
               </ul>
             ) : (
               <>
-                <p className="text-gray-500">No repeating text patterns available</p>
+                <p className="text-gray-500">No repeating 3-word text patterns available. Please see Ayats that contain the text-pattern</p>
               </>
             )
           ) : (
@@ -506,7 +505,7 @@ export default function Home() {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">No repeating 4-word text patterns available</p>
+              <p className="text-gray-500">No repeating 4-word text patterns available. Please see Ayats that contain the text-pattern</p>
             )
           ) : (
             <p className="text-gray-500">Select a repeating 3-word text pattern to view repeating 5-word text patterns</p>
@@ -539,7 +538,7 @@ export default function Home() {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">No thematic contexts available</p>
+              <p className="text-gray-500">No repeating 5-word text patterns available. Please see Ayats that contain the text-pattern</p>
             )
           ) : (
             <p className="text-gray-500">Select a repeating 4-word text pattern to view repeating 5-word text patterns</p>
@@ -620,6 +619,8 @@ export default function Home() {
         ) : (
           <div className="items-center justify-items-center min-h-screen lg:px-8 md:px-6 px-6 lg:pt-10 md:pt-8 pt-7 gap-16">
 
+            {thematicContexts.length > 0 ? (<p>{thematicContexts.length} Results Found</p>) : (<p>No Results Found</p>)}
+
             {/* Header */}
             <header className="w-full">
               <h1 className="font-julius-sans lg:text-4xl md:text-3xl text-2xl text-center font-bold">Thematic Text-Pattern Searching</h1>
@@ -639,6 +640,7 @@ export default function Home() {
                     className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226] pr-10"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
+                    onClick={() => setKeyboardOpen(true)}
                   />
                   {searchInput && (
                     <button
@@ -685,7 +687,7 @@ export default function Home() {
                   <div className='flex flex-row justify-between items-start sticky top-0 z-20 bg-[#1f2624] px-0 shadow-xl border-[#435e43] pt-3'>
                     <div>
                       <h1 className='font-bold ml-5 mt-0 mb-2 text-zinc-200 lg:text-base text-sm'>
-                        Search Results ( {searchedTopics.length ? `${searchedTopics.length} Patterns` : '' } ) :
+                        Search Results ( {searchedTopics.length ? `${searchedTopics.length} Patterns` : ''} ) :
                       </h1>
                     </div>
                   </div>
@@ -707,6 +709,9 @@ export default function Home() {
                                     toggleSubThemes(matchedIndex, topic);
                                     scrollToBiGram(topic.id);
                                     setKeyboardOpen(false);
+                                    setSearchInput('');
+                                    setDebouncedSearch('');
+                                    setGramState('tri-gram');
                                   }}
                                 >
                                   <div
@@ -760,7 +765,7 @@ export default function Home() {
               {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext && debouncedSearch.length < 1 ? (
                 <div className="w-full my-0 py-0"></div>
               ) : (
-                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-6 lg:mb-6 mt-6 mb-0 shadow-xl flex lg:flex-row flex-col gap-5 items-center justify-between">
+                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-6 lg:mb-2 mt-6 mb-0 shadow-xl flex flex-row gap-5 items-center justify-between">
                   <h1 className='lg:text-xl text-lg text-center font-bold'>
                     <span>Selected Pattern: </span>
                     <span className="block sm:inline font-normal">
@@ -783,7 +788,7 @@ export default function Home() {
                     onClick={() => toggleSubThemes(null, null)}
                   >
                     <div className='bg-[#405c13] py-[2.5px] px-2 rounded text-xs hover:bg-[#4f7422] transition-colors duration-200'>
-                      Clear
+                      ✖
                     </div>
                   </button>
                 </div>
