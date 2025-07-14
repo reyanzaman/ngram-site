@@ -755,7 +755,7 @@ export default function Home() {
                         ))}
                       </>
                     ) : (
-                      <div className='min-h-[12.8rem]'>
+                      <div className=''>
                         <p p className="text-gray-500">No results found</p>
                       </div>
                     )}
@@ -765,7 +765,7 @@ export default function Home() {
 
               {/* Keyboard Component */}
               {keyboardOpen && (
-                <div className='lg:mb-2 mb-3 lg:mt-6 mt-6 w-full mx-auto'>
+                <div className='lg:mb-2 mb-1 lg:mt-6 mt-6 w-full mx-auto'>
                   <ArabicKeyboard searchInput={searchInput} setSearchInput={setSearchInput} />
                 </div>
               )}
@@ -774,7 +774,7 @@ export default function Home() {
               {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext && debouncedSearch.length < 1 ? (
                 <div className="w-full my-0 py-0"></div>
               ) : (
-                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-6 lg:mb-2 mt-6 mb-0 shadow-xl flex flex-row gap-5 items-center justify-between">
+                <div className="w-fit lg:min-w-[30rem] min-w-[21rem] py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-6 lg:mb-2 mt-6 mb-0 shadow-xl flex flex-row gap-5 items-center justify-between">
                   <h1 className='lg:text-xl text-lg text-center font-bold'>
                     <span>Selected Pattern: </span>
                     <span className="block sm:inline font-normal">
@@ -804,7 +804,7 @@ export default function Home() {
               )}
 
               {/* N-Gram Selection */}
-              <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full mt-8 text-center items-center">
+              <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full lg:mt-8 mt-6 text-center items-center">
 
                 {/* Bi-Gram */}
                 {/* Mobile: Render conditionally */}
