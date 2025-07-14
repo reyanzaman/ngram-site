@@ -332,6 +332,15 @@ export default function Home() {
   // Fetch Bi Gram
   const fetchPrimaryThemes = async () => {
     setLoadingThemes(true);
+
+    // Try to load from localStorage
+    const cached = localStorage.getItem('primaryThemes');
+    if (cached) {
+      setPrimaryThemes(JSON.parse(cached));
+      setLoadingThemes(false);
+      return;
+    }
+
     try {
       const res = await fetch(`/api/get/primary-themes`, {
         method: "GET",
@@ -342,6 +351,7 @@ export default function Home() {
 
       if (res.ok) {
         setPrimaryThemes(data.themes);
+        localStorage.setItem('primaryThemes', JSON.stringify(data.themes));
       } else {
         console.error("Error retrieving bi-grams:", data.error);
       }
