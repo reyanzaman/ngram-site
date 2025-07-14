@@ -9,7 +9,7 @@ export async function GET() {
             return NextResponse.json({ error: "Failed to connect to the database" }, { status: 500 });
         }
 
-        const getQuery = `SELECT * FROM bi_grams;`;
+        const getQuery = `SELECT * FROM bi_grams ORDER BY bi_gram_text COLLATE "ucs_basic";`;
 
         const client = await pool.connect();
         try {

@@ -27,11 +27,11 @@ export async function POST(request) {
 
       for (const { table, column, label } of queries) {
         const sql = `
-          SELECT id, ${column}
-          FROM ${table}
-          WHERE ${column} ILIKE $1 OR ${column} ILIKE $2
-        `;
-        const res = await client.query(sql, [`%${searchTerms[0]}%`, `%${searchTerms[1]}%`]);
+                    SELECT id, ${column}
+                    FROM ${table}
+                    WHERE ${column} ILIKE $1
+                  `;
+        const res = await client.query(sql, [`${searchTerms[0]}%`]);
 
         results = results.concat(
           res.rows.map(row => ({

@@ -22,8 +22,6 @@ export default function Home() {
 
   const [gramState, setGramState] = React.useState('bi-gram');
 
-  const [primaryTopics, setPrimaryTopics] = useState([]);
-  const [oneGramsLinkBiGrams, setOneGramsLinkBiGrams] = useState([]);
   const [primaryThemes, setPrimaryThemes] = useState([]);
   const [subThemes, setSubThemes] = useState([]);
   const [thematicTopics, setThematicTopics] = useState([]);
@@ -38,15 +36,16 @@ export default function Home() {
   const [loadingThematicContexts, setLoadingThematicContexts] = useState(false);
   const [loadingAyats, setLoadingAyats] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [loadingSearch, setLoadingSearch] = useState(false);
 
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [loadingPrimaryTopics, setLoadingPrimaryTopics] = useState(true);
   const [searchedTopics, setSearchedTopics] = useState([]);
   const [searchTrigger, setSearchTrigger] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   const oneGramContainerRef = useRef(null);
+  const biGramRefs = useRef({});
   const [oneGramScrollPos, setOneGramScrollPos] = useState(0);
 
   const groupedTopics = searchedTopics.reduce((acc, topic) => {
@@ -54,9 +53,6 @@ export default function Home() {
     acc[topic.foundInGram].push(topic);
     return acc;
   }, {});
-
-  const [currentGramIndex, setCurrentGramIndex] = React.useState(0);
-  const grams = Object.keys(groupedTopics);
 
   async function fetchSearchResults(originalText) {
     try {
@@ -78,32 +74,13 @@ export default function Home() {
     }
   }
 
-  function scrollToGram(idx) {
-    if (idx < 0 || idx >= grams.length + 2) return;
-
-    const element = document.getElementById(`gram-${idx}`);
-    const container = document.querySelector('.search-scroll-container');
-
-    if (element && container) {
-      // Set offset based on screen width (you can tweak breakpoints and values)
-      const isMobile = window.innerWidth <= 768;
-      const offset = isMobile ? 100 : 100;
-
-      let scrollTarget = element.offsetTop - offset;
-
-      // Clamp scrollTarget between 0 and max scroll
-      const maxScrollTop = container.scrollHeight - container.clientHeight;
-      if (scrollTarget < 0) scrollTarget = 0;
-      if (scrollTarget > maxScrollTop) scrollTarget = maxScrollTop;
-
-      container.scrollTo({
-        top: scrollTarget,
-        behavior: 'smooth',
-      });
-
-      setCurrentGramIndex(idx);
+  // Scrolls bi-gram list
+  const scrollToBiGram = (themeId) => {
+    const el = biGramRefs.current[themeId];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }
+  };
 
   // Debounce Search Input
   useEffect(() => {
@@ -121,14 +98,14 @@ export default function Home() {
     }
 
     async function performSearch() {
-      setLoadingThemes(true);
+      setLoadingSearch(true);
       const results = await fetchSearchResults(debouncedSearch);
       setSearchedTopics(results);
-      setLoadingThemes(false);
+      setLoadingSearch(false);
     }
 
     performSearch();
-  }, [debouncedSearch, searchTrigger, primaryTopics, primaryThemes]);
+  }, [debouncedSearch, searchTrigger]);
 
   // Fetch Ayats
   useEffect(() => {
@@ -449,8 +426,8 @@ export default function Home() {
               {primaryThemes.map((theme, index) => (
                 <li key={index} className="py-1">
                   <div
-                    className={`cursor-pointer hover:bg-[#28302d] rounded px-2 ${subOpenIndex === index ? "text-green-200" : "text-gray-200"
-                      }`}
+                    ref={el => biGramRefs.current[theme.id] = el}
+                    className={`cursor-pointer hover:bg-[#28302d] rounded px-2 ${subOpenIndex === index ? "text-green-200" : "text-gray-200"}`}
                     onClick={() => toggleSubThemes(index, theme)}
                   >
                     {theme.bi_gram_text}
@@ -596,8 +573,6 @@ export default function Home() {
 
   const memoizedBiGram = useMemo(() => renderBiGramContent(), [
     gramState,
-    primaryTopics,
-    loadingPrimaryTopics,
     openIndex,
     primaryThemes,
     loadingThemes,
@@ -655,83 +630,83 @@ export default function Home() {
             <main className="flex flex-col items-center w-full lg:px-8 px-1 lg:py-6 pt-4 my-0">
 
               {/* Search Box Here */}
-              <>
-                <div className="w-full lg:mb-6 lg:mt-0 mb-2 mt-2 flex items-center gap-2">
+              <div className="w-full lg:mb-2 lg:mt-0 mb-2 mt-2 flex items-center gap-2">
+                {/* Input and Cross Button in relative container */}
+                <div className="relative w-full">
                   <input
                     type="text"
                     placeholder="Search Arabic Text Patterns . . ."
-                    className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226]"
+                    className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226] pr-10"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setKeyboardOpen((v) => !v)}
-                    aria-label="Toggle Keyboard"
-                    className={`p-2 rounded border border-[#3a403e] transition
-                              ${keyboardOpen ? 'bg-[#294a32]' : 'bg-[#141a17]'}
-                              text-zinc-100 hover:bg-[#1f2624]`}
-                    style={{ minWidth: 38, minHeight: 38 }}
-                  >
-                    {/* Simple keyboard SVG icon */}
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <rect x="3" y="7" width="18" height="10" rx="2" stroke="#e0e0e0" strokeWidth="1.7" />
-                      <rect x="7" y="11" width="2" height="2" rx="0.5" fill="#e0e0e0" />
-                      <rect x="11" y="11" width="2" height="2" rx="0.5" fill="#e0e0e0" />
-                      <rect x="15" y="11" width="2" height="2" rx="0.5" fill="#e0e0e0" />
-                    </svg>
-                  </button>
+                  {searchInput && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchInput('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-400"
+                      aria-label="Clear search"
+                      tabIndex={0}
+                    >
+                      {/* Cross Icon SVG */}
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M6 6L14 14M14 6L6 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
-                {keyboardOpen && (
-                  <div className='mb-6 w-full mx-auto'>
-                    <ArabicKeyboard searchInput={searchInput} setSearchInput={setSearchInput} />
-                  </div>
-                )}
-              </>
+                {/* Keyboard Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setKeyboardOpen((v) => !v)}
+                  aria-label="Toggle Keyboard"
+                  className={`p-2 rounded border border-[#3a403e] lg:hover:bg-[#1f2624] transition
+                  ${keyboardOpen ? 'bg-[#294a32]' : 'bg-[#141a17]'}
+                  text-zinc-100`}
+                  style={{ minWidth: 38, minHeight: 38 }}
+                >
+                  {/* Simple keyboard SVG icon */}
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="7" width="18" height="10" rx="2" stroke="#e0e0e0" strokeWidth="1.7" />
+                    <rect x="7" y="11" width="2" height="2" rx="0.5" fill="#e0e0e0" />
+                    <rect x="11" y="11" width="2" height="2" rx="0.5" fill="#e0e0e0" />
+                    <rect x="15" y="11" width="2" height="2" rx="0.5" fill="#e0e0e0" />
+                  </svg>
+                </button>
+              </div>
 
               {/* Search Result Display */}
               {debouncedSearch.length > 0 && (
                 <div
-                  className="search-scroll-container relative bg-[#1f2624] shadow-md rounded lg:mb-10 mb-2 lg:mt-0 mt-4 w-full"
-                  style={{ maxHeight: '30rem', overflowY: 'auto' }}
+                  className="search-scroll-container relative bg-[#1f2624] shadow-md rounded lg:mb-2 mb-0 w-full"
+                  style={{ maxHeight: '12.8rem', overflowY: 'auto' }}
                 >
-
                   {/* Headers */}
                   <div className='flex flex-row justify-between items-start sticky top-0 z-20 bg-[#1f2624] px-0 shadow-xl border-[#435e43] pt-3'>
                     <div>
-                      <h1 className='font-bold ml-5 mt-2 mb-4 text-zinc-200 lg:text-base text-sm'>
+                      <h1 className='font-bold ml-5 mt-0 mb-2 text-zinc-200 lg:text-base text-sm'>
                         Search Results ( {searchedTopics.length} Patterns ) :
                       </h1>
                     </div>
                   </div>
 
                   <div className="lg:p-4 p-3 text-zinc-200 lg:text-lg text-base">
-                    {loadingThemes ? (
+                    {loadingSearch ? (
                       <p className="text-gray-500 pl-2">Loading results...</p>
                     ) : searchedTopics.length > 0 ? (
                       <>
                         {Object.entries(groupedTopics).map(([gram, topics], idx) => (
                           <div key={gram} id={`gram-${idx + 1}`} className="mb-4">
-                            <h3 className="text-[#90af87] font-semibold mb-2 ml-2">{gram}</h3>
                             <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0">
                               {topics.map((topic, index) => (
                                 <li
                                   key={index}
                                   className="cursor-pointer py-2 px-3 border border-[#2f3a35] bg-[#161f1a] hover:bg-[#232f28] transition-colors duration-200"
                                   onClick={() => {
-                                    if (gram === '2-Word Text Patterns') {
-                                      const matchedIndex = primaryThemes.findIndex(t => t.id === topic.id);
-                                      toggleSubThemes(matchedIndex, topic);
-                                    } else if (gram === '3-Word Text Patterns') {
-                                      const matchedIndex = subThemes.findIndex(t => t.id === topic.id);
-                                      toggleThematicTopics(matchedIndex, topic);
-                                    } else if (gram === '4-Word Text Patterns') {
-                                      const matchedIndex = thematicTopics.findIndex(t => t.id === topic.id);
-                                      toggleThematicContext(matchedIndex, topic);
-                                    } else if (gram === '5-Word Text Patterns') {
-                                      const matchedIndex = thematicContexts.findIndex(t => t.id === topic.id);
-                                      toggleFiveGram(matchedIndex, topic);
-                                    }
+                                    const matchedIndex = primaryThemes.findIndex(t => t.id === topic.id);
+                                    toggleSubThemes(matchedIndex, topic);
+                                    scrollToBiGram(topic.id);
+                                    setKeyboardOpen(false);
                                   }}
                                 >
                                   <div
@@ -758,7 +733,6 @@ export default function Home() {
                                         ''
                                       }
                                     </div>
-                                    <div className="text-sm text-gray-400 mt-1">{topic.foundInGram}</div>
                                   </div>
                                 </li>
                               ))}
@@ -767,9 +741,18 @@ export default function Home() {
                         ))}
                       </>
                     ) : (
-                      <p className="text-gray-500">No results found</p>
+                      <div className='min-h-[12.8rem]'>
+                        <p p className="text-gray-500">No results found</p>
+                      </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* Keyboard Component */}
+              {keyboardOpen && (
+                <div className='lg:mb-2 mb-3 lg:mt-6 mt-6 w-full mx-auto'>
+                  <ArabicKeyboard searchInput={searchInput} setSearchInput={setSearchInput} />
                 </div>
               )}
 
@@ -777,7 +760,7 @@ export default function Home() {
               {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext && debouncedSearch.length < 1 ? (
                 <div className="w-full my-0 py-0"></div>
               ) : (
-                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-0 lg:mb-6 mt-6 mb-6 shadow-xl flex lg:flex-row flex-col gap-5 items-center justify-between">
+                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-6 lg:mb-6 mt-6 mb-6 shadow-xl flex lg:flex-row flex-col gap-5 items-center justify-between">
                   <h1 className='lg:text-xl text-lg text-center font-bold'>
                     <span>Selected Pattern: </span>
                     <span className="block sm:inline font-normal">
