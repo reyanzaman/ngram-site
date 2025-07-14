@@ -1029,7 +1029,8 @@ export default function Home() {
             {/* Footer */}
             <footer className="items-center justify-center w-full m-0 p-0 text-center">
               <hr className="w-full lg:mt-6 mt-6 mb-3 border-zinc-400"></hr>
-              <p className="p-0 mb-3 lg:text-sm text-xs">&copy; PhD Research Project of Nazia Nishat</p>
+              <p className="p-0 mb-1 lg:text-sm text-xs">&copy; PhD Research Project of Nazia Nishat</p>
+              <p className="p-0 mb-3 lg:text-xs text-[10px]">Developed by Khandoker Ashik Uz Zaman</p>
             </footer>
           </div>
         )
