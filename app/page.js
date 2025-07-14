@@ -685,7 +685,7 @@ export default function Home() {
                   <div className='flex flex-row justify-between items-start sticky top-0 z-20 bg-[#1f2624] px-0 shadow-xl border-[#435e43] pt-3'>
                     <div>
                       <h1 className='font-bold ml-5 mt-0 mb-2 text-zinc-200 lg:text-base text-sm'>
-                        Search Results ( {searchedTopics.length} Patterns ) :
+                        Search Results ( {searchedTopics.length ? `${searchedTopics.length} Patterns` : '' } ) :
                       </h1>
                     </div>
                   </div>
@@ -790,15 +790,13 @@ export default function Home() {
               )}
 
               {/* N-Gram Selection */}
-              <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full mt-4 text-center items-center">
+              <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full mt-8 text-center items-center">
 
                 {/* Bi-Gram */}
                 {/* Mobile: Render conditionally */}
                 {gramState === 'bi-gram' && <div className="sm:hidden">{memoizedBiGram}</div>}
                 {/* Non-mobile: Always render */}
                 <div className="hidden sm:block">{memoizedBiGram}</div>
-
-                {/* Tri/Four/Five Grams */}
 
                 {/* Tri-Gram */}
                 {/* Mobile: Render conditionally */}
@@ -834,10 +832,10 @@ export default function Home() {
               </div>
 
               {/* Before/After & Ayat List */}
-              <div className='w-full pt-2 pb-10'>
+              <div className='w-full lg:pt-8 pt-4 pb-4'>
 
                 {/* Ayat List */}
-                <div className="lg:pt-10 lg:pb-10 pt-4 pb-10">
+                <div className="">
                   <div>
                     <h3 className="lg:text-left text-center font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-300">
                       {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext
@@ -898,8 +896,8 @@ export default function Home() {
                 </div>
 
                 {/* Before, Selected Pattern, After Section */}
-                <div className='w-full'>
-                  <hr className="w-full lg:mt-10 mt-4 mb-3 border-zinc-500" />
+                <div className='w-full mt-8 mb-2'>
+                  <hr className="w-full mb-3 border-zinc-500" />
                   <div className="">
                     <div className="flex flex-row justify-center lg:gap-4 gap-5">
                       <div className='lg:w-[300px] w-[100px]'>
@@ -946,8 +944,8 @@ export default function Home() {
               </div>
 
               {/* Details of Selected Ayat */}
-              <div className="w-full">
-                <div className="lg:mt-2 mt-6 lg:mb-8 mb-6 items-start">
+              <div className="w-full lg:mb-8 mb-6">
+                <div className="items-start">
                   <h1 className="lg:text-xl text-lg font-julius-sans font-bold lg:pt-3 pt-1">
                     Details of selected Ayat
                   </h1>
