@@ -760,7 +760,7 @@ export default function Home() {
               {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext && debouncedSearch.length < 1 ? (
                 <div className="w-full my-0 py-0"></div>
               ) : (
-                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-6 lg:mb-6 mt-6 mb-6 shadow-xl flex lg:flex-row flex-col gap-5 items-center justify-between">
+                <div className="w-fit py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-6 lg:mb-6 mt-6 mb-0 shadow-xl flex lg:flex-row flex-col gap-5 items-center justify-between">
                   <h1 className='lg:text-xl text-lg text-center font-bold'>
                     <span>Selected Pattern: </span>
                     <span className="block sm:inline font-normal">
