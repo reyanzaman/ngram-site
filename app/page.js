@@ -619,8 +619,6 @@ export default function Home() {
         ) : (
           <div className="items-center justify-items-center min-h-screen lg:px-8 md:px-6 px-6 lg:pt-10 md:pt-8 pt-7 gap-16">
 
-            {thematicContexts.length > 0 ? (<p>{thematicContexts.length} Results Found</p>) : (<p>No Results Found</p>)}
-
             {/* Header */}
             <header className="w-full">
               <h1 className="font-julius-sans lg:text-4xl md:text-3xl text-2xl text-center font-bold">Thematic Text-Pattern Searching</h1>
