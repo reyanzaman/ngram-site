@@ -46,6 +46,7 @@ export default function Home() {
 
   const oneGramContainerRef = useRef(null);
   const biGramRefs = useRef({});
+  const [pendingScrollId, setPendingScrollId] = useState(null);
 
   const groupedTopics = searchedTopics.reduce((acc, topic) => {
     if (!acc[topic.foundInGram]) acc[topic.foundInGram] = [];
@@ -75,15 +76,17 @@ export default function Home() {
 
   // Scrolls bi-gram list
   const scrollToBiGram = (themeId) => {
-    const container = oneGramContainerRef.current;
-    const el = biGramRefs.current[themeId];
-    if (container && el) {
-      const offset = el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
-      container.scrollTo({
-        top: offset, // try without behavior on mobile if needed
-        behavior: 'smooth',
-      });
-    }
+    setTimeout(() => {
+      const container = oneGramContainerRef.current;
+      const el = biGramRefs.current[themeId];
+      if (container && el) {
+        const offset = el.offsetTop - container.offsetTop;
+        container.scrollTo({
+          top: offset,
+          behavior: 'smooth',
+        });
+      }
+    }, 0);
   };
 
   // Debounce Search Input
@@ -198,6 +201,24 @@ export default function Home() {
 
     fetchAyatDetails();
   }, [selectedAyatIndex]);
+
+  // Scroll to Bi Gram when pendingScrollId is set
+  useEffect(() => {
+    if (pendingScrollId) {
+      setTimeout(() => {
+        const container = oneGramContainerRef.current;
+        const el = biGramRefs.current[pendingScrollId];
+        console.log('Double tick - container:', container, 'el:', el);
+
+        if (container && el) {
+          const offset = el.offsetTop - container.offsetTop;
+          container.scrollTo({ top: offset, behavior: 'smooth' });
+        }
+        setPendingScrollId(null);
+      }, 80);
+    }
+  }, [pendingScrollId, primaryThemes]);
+
 
   // Toggle Bi Gram
   const toggleSubThemes = (subIndex, theme) => {
@@ -436,7 +457,7 @@ export default function Home() {
               {primaryThemes.map((theme, index) => (
                 <li key={index} className="py-1">
                   <div
-                    ref={el => biGramRefs.current[theme.id] = el}
+                    ref={el => biGramRefs.current[String(theme.id)] = el}
                     className={`cursor-pointer hover:bg-[#28302d] rounded px-2 ${subOpenIndex === index ? "text-green-200" : "text-gray-200"}`}
                     onClick={() => toggleSubThemes(index, theme)}
                   >
@@ -451,6 +472,7 @@ export default function Home() {
           )}
         </div>
       </div>
+      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{primaryThemes.length > 1 ? `${primaryThemes.length} Patterns` : `${primaryThemes.length} Pattern`}</p>
     </>
   );
 
@@ -490,6 +512,7 @@ export default function Home() {
           )}
         </div>
       </div>
+      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{subThemes.length > 1 ? `${subThemes.length} Patterns` : `${subThemes.length} Pattern`}</p>
     </>
   );
 
@@ -523,6 +546,7 @@ export default function Home() {
           )}
         </div>
       </div>
+      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{thematicTopics.length > 1 ? `${thematicTopics.length} Patterns` : `${thematicTopics.length} Pattern`}</p>
     </>
   );
 
@@ -556,6 +580,7 @@ export default function Home() {
           )}
         </div>
       </div>
+      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{thematicContexts.length > 1 ? `${thematicContexts.length} Patterns` : `${thematicContexts.length} Pattern`}</p>
     </>
   );
 
@@ -687,7 +712,7 @@ export default function Home() {
               </div>
 
               {/* Search Result Display */}
-              {debouncedSearch.length > 0 && (
+              {keyboardOpen && (
                 <div
                   className="search-scroll-container relative bg-[#1f2624] shadow-md rounded lg:mb-2 mb-0 w-full"
                   style={{ maxHeight: '12.8rem', overflowY: 'auto' }}
@@ -696,33 +721,40 @@ export default function Home() {
                   <div className='flex flex-row justify-between items-start sticky top-0 z-20 bg-[#1f2624] px-0 shadow-xl border-[#435e43] pt-3'>
                     <div>
                       <h1 className='font-bold ml-5 mt-0 mb-2 text-zinc-200 lg:text-base text-sm'>
-                        Search Results ( {searchedTopics.length ? `${searchedTopics.length} Patterns` : ''} ) :
+                        Search Results ( {searchedTopics.length ? `${searchedTopics.length} Patterns` : '-'} ) :
                       </h1>
                     </div>
                   </div>
 
                   <div className="lg:p-4 p-3 text-zinc-200 lg:text-lg text-base">
                     {loadingSearch ? (
-                        <div className="min-h-[12.8rem]">
-                           <p className="text-gray-500 pl-2">Loading results...</p>
-                        </div>
+                      <div className="min-h-[8rem]">
+                        <p className="text-gray-500 pl-2">Loading results...</p>
+                      </div>
                     ) : searchedTopics.length > 0 ? (
                       <>
                         {Object.entries(groupedTopics).map(([gram, topics], idx) => (
-                          <div key={gram} id={`gram-${idx + 1}`} className="mb-4 min-h-[12.8rem]">
+                          <div key={gram} id={`gram-${idx + 1}`} className="mb-4 min-h-[7rem]">
                             <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0">
                               {topics.map((topic, index) => (
                                 <li
                                   key={index}
                                   className="cursor-pointer py-2 px-3 border border-[#2f3a35] bg-[#161f1a] hover:bg-[#232f28] transition-colors duration-200"
                                   onClick={() => {
-                                    const matchedIndex = primaryThemes.findIndex(t => t.id === topic.id);
+                                    const matchedIndex = primaryThemes.findIndex(t => String(t.id) === String(topic.id));
+
+                                    // 1. Show bi-gram first (if not already), then scroll
+                                    setGramState('bi-gram');
                                     toggleSubThemes(matchedIndex, topic);
-                                    scrollToBiGram(topic.id);
+                                    setPendingScrollId(String(topic.id));
                                     setKeyboardOpen(false);
                                     setSearchInput('');
                                     setDebouncedSearch('');
-                                    setGramState('tri-gram');
+
+                                    // 2. Switch to tri-gram after a short delay
+                                    setTimeout(() => {
+                                      setGramState('tri-gram');
+                                    }, 250); // 200-300ms is enough for the DOM to update & scroll
                                   }}
                                 >
                                   <div
@@ -757,8 +789,8 @@ export default function Home() {
                         ))}
                       </>
                     ) : (
-                      <div className="min-h-[12.8rem]" >
-                        <p p className="text-gray-500">No results found</p>
+                      <div className="min-h-[8rem]" >
+                        <p className="text-gray-500">Search for patterns using the arabic keyboard below</p>
                       </div>
                     )}
                   </div>
@@ -773,10 +805,8 @@ export default function Home() {
               )}
 
               {/* Selected Pattern Display */}
-              {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext && debouncedSearch.length < 1 ? (
-                <div className="w-full my-0 py-0"></div>
-              ) : (
-                <div className="w-fit lg:min-w-[30rem] min-w-[21rem] py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-6 lg:mb-2 mt-6 mb-0 shadow-xl flex flex-row gap-5 items-center justify-between">
+              <div className="w-fit lg:min-w-[25rem] min-w-[21rem] py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-6 lg:mb-2 mt-6 mb-0 shadow-xl">
+                <div className="flex flex-row items-center justify-center gap-5">
                   <h1 className='lg:text-xl text-lg text-center font-bold'>
                     <span>Selected Pattern: </span>
                     <span className="block sm:inline font-normal">
@@ -803,14 +833,13 @@ export default function Home() {
                     </div>
                   </button>
                 </div>
-              )}
+              </div>
 
               {/* N-Gram Selection */}
               <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full lg:mt-8 mt-6 text-center items-center">
 
-                {/* Bi-Gram */}
-                {/* Mobile: Render conditionally */}
-                {gramState === 'bi-gram' && <div className="sm:hidden">{memoizedBiGram}</div>}
+                {/* Only render one bi-gram container, with ref */}
+                {(gramState === 'bi-gram') && <div>{memoizedBiGram}</div>}
                 {/* Non-mobile: Always render */}
                 <div className="hidden sm:block">{memoizedBiGram}</div>
 
@@ -847,7 +876,7 @@ export default function Home() {
                 {gramState === 'five-gram' && renderBackButton('five-gram', 'four-gram')}
               </div>
 
-              {/* Before/After & Ayat List */}
+              {/* Ayat List & Before/After  */}
               <div className='w-full lg:pt-8 pt-4 pb-4'>
 
                 {/* Ayat List */}
@@ -860,7 +889,7 @@ export default function Home() {
                           ? "Loading Ayats..."
                           : `Corresponding Ayats ( Found: ${ayats.length} )`}
                     </h3>
-                    <p className="text-center lg:text-base text-sm pb-3">Select ayat to view details</p>
+                    <p className="lg:text-left text-center lg:text-base text-sm pb-3">Select ayat to view details</p>
                     <div className="bg-[#1f2624] shadow-md rounded py-3">
                       <div className="lg:px-4 px-3 lg:h-[25rem] h-[15rem] text-zinc-200 overflow-auto lg:text-lg text-base">
                         <div className="lg:py-2 lg:px-3">
