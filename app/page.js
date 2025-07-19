@@ -480,7 +480,7 @@ export default function Home() {
               </ul>
             ) : (
               <>
-                <p className="text-gray-500">No repeating 3-word text patterns available. Please see Ayats that contain the text-pattern</p>
+                <p className="text-gray-500">No repeating 3-word text patterns available. Please see the Ayats below that contain the text-pattern</p>
               </>
             )
           ) : (
@@ -516,7 +516,7 @@ export default function Home() {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">No repeating 4-word text patterns available. Please see Ayats that contain the text-pattern</p>
+              <p className="text-gray-500">No repeating 4-word text patterns available. Please see the Ayats below that contain the text-pattern</p>
             )
           ) : (
             <p className="text-gray-500">Select a repeating 3-word text pattern to view repeating 5-word text patterns</p>
@@ -549,7 +549,7 @@ export default function Home() {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">No repeating 5-word text patterns available. Please see Ayats that contain the text-pattern</p>
+              <p className="text-gray-500">No repeating 5-word text patterns available. Please see the Ayats below that contain the text-pattern</p>
             )
           ) : (
             <p className="text-gray-500">Select a repeating 4-word text pattern to view repeating 5-word text patterns</p>
@@ -858,7 +858,7 @@ export default function Home() {
                           ? "Loading Ayats..."
                           : `Corresponding Ayats ( Found: ${ayats.length} )`}
                     </h3>
-                    <p>Select ayat to view details</p>
+                    <p text-center lg:text-base text-sm>Select ayat to view details</p>
                     <div className="bg-[#1f2624] shadow-md rounded py-3">
                       <div className="lg:px-4 px-3 lg:h-[25rem] h-[15rem] text-zinc-200 overflow-auto lg:text-lg text-base">
                         <div className="lg:py-2 lg:px-3">
