@@ -703,11 +703,13 @@ export default function Home() {
 
                   <div className="lg:p-4 p-3 text-zinc-200 lg:text-lg text-base">
                     {loadingSearch ? (
-                      <p className="text-gray-500 pl-2">Loading results...</p>
+                        <div className="min-h-[12.8rem]">
+                           <p className="text-gray-500 pl-2">Loading results...</p>
+                        </div>
                     ) : searchedTopics.length > 0 ? (
                       <>
                         {Object.entries(groupedTopics).map(([gram, topics], idx) => (
-                          <div key={gram} id={`gram-${idx + 1}`} className="mb-4">
+                          <div key={gram} id={`gram-${idx + 1}`} className="mb-4 min-h-[12.8rem]">
                             <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0">
                               {topics.map((topic, index) => (
                                 <li
