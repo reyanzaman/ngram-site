@@ -858,7 +858,7 @@ export default function Home() {
                           ? "Loading Ayats..."
                           : `Corresponding Ayats ( Found: ${ayats.length} )`}
                     </h3>
-                    <p text-center lg:text-base text-sm>Select ayat to view details</p>
+                    <p className="text-center lg:text-base text-sm">Select ayat to view details</p>
                     <div className="bg-[#1f2624] shadow-md rounded py-3">
                       <div className="lg:px-4 px-3 lg:h-[25rem] h-[15rem] text-zinc-200 overflow-auto lg:text-lg text-base">
                         <div className="lg:py-2 lg:px-3">
