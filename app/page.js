@@ -643,7 +643,7 @@ export default function Home() {
               <div className="w-full lg:mb-2 lg:mt-0 mb-2 mt-2 flex items-center gap-2">
                 {/* Input and Cross Button in relative container */}
                 <div className="relative w-full">
-                  <input
+                  <input readOnly
                     type="text"
                     placeholder="Search Text Patterns . . ."
                     className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226] pr-10"
@@ -858,6 +858,7 @@ export default function Home() {
                           ? "Loading Ayats..."
                           : `Corresponding Ayats ( Found: ${ayats.length} )`}
                     </h3>
+                    <p>Select ayat to view details</p>
                     <div className="bg-[#1f2624] shadow-md rounded py-3">
                       <div className="lg:px-4 px-3 lg:h-[25rem] h-[15rem] text-zinc-200 overflow-auto lg:text-lg text-base">
                         <div className="lg:py-2 lg:px-3">
