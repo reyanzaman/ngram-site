@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { GrFormNext, GrFormPrevious, GrFormClose } from "react-icons/gr";
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
+import { GrFormNext, GrFormPrevious } from "react-icons/gr";
 import ArabicKeyboard from '@/app/utils/keyboard';
 
 export default function Home() {
@@ -53,6 +53,11 @@ export default function Home() {
     acc[topic.foundInGram].push(topic);
     return acc;
   }, {});
+
+  function isDesktop() {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth >= 640; // matches 'sm' breakpoint (Tailwind)
+  }
 
   async function fetchSearchResults(originalText) {
     try {
@@ -203,22 +208,23 @@ export default function Home() {
   }, [selectedAyatIndex]);
 
   // Scroll to Bi Gram when pendingScrollId is set
-  useEffect(() => {
-    if (pendingScrollId) {
-      setTimeout(() => {
-        const container = oneGramContainerRef.current;
-        const el = biGramRefs.current[pendingScrollId];
-        console.log('Double tick - container:', container, 'el:', el);
-
-        if (container && el) {
-          const offset = el.offsetTop - container.offsetTop;
-          container.scrollTo({ top: offset, behavior: 'smooth' });
-        }
+  useLayoutEffect(() => {
+    if (!pendingScrollId) return;
+    let tries = 0;
+    function tryScroll() {
+      const el = biGramRefs.current[pendingScrollId];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setPendingScrollId(null);
-      }, 80);
+      } else if (tries < 8) {
+        tries++;
+        setTimeout(tryScroll, 120);
+      } else {
+        setPendingScrollId(null);
+      }
     }
-  }, [pendingScrollId, primaryThemes]);
-
+    tryScroll();
+  }, [pendingScrollId, primaryThemes, subOpenIndex]);
 
   // Toggle Bi Gram
   const toggleSubThemes = (subIndex, theme) => {
@@ -742,19 +748,22 @@ export default function Home() {
                                   className="cursor-pointer py-2 px-3 border border-[#2f3a35] bg-[#161f1a] hover:bg-[#232f28] transition-colors duration-200"
                                   onClick={() => {
                                     const matchedIndex = primaryThemes.findIndex(t => String(t.id) === String(topic.id));
-
-                                    // 1. Show bi-gram first (if not already), then scroll
                                     setGramState('bi-gram');
                                     toggleSubThemes(matchedIndex, topic);
-                                    setPendingScrollId(String(topic.id));
                                     setKeyboardOpen(false);
                                     setSearchInput('');
                                     setDebouncedSearch('');
 
-                                    // 2. Switch to tri-gram after a short delay
-                                    setTimeout(() => {
-                                      setGramState('tri-gram');
-                                    }, 250); // 200-300ms is enough for the DOM to update & scroll
+                                    // Only on desktop, set pendingScrollId (triggers useLayoutEffect)
+                                    if (isDesktop()) {
+                                      setTimeout(() => {
+                                        setPendingScrollId(String(topic.id));
+                                      }, 0);
+                                    } else {
+                                      setTimeout(() => {
+                                        setGramState('tri-gram');
+                                      }, 250);
+                                    }
                                   }}
                                 >
                                   <div
@@ -839,7 +848,7 @@ export default function Home() {
               <div className="grid lg:grid-cols-4 grid-cols-1 lg:gap-6 gap-y-3 gap-x-3 w-full lg:mt-8 mt-6 text-center items-center">
 
                 {/* Only render one bi-gram container, with ref */}
-                {(gramState === 'bi-gram') && <div>{memoizedBiGram}</div>}
+                {(gramState === 'bi-gram') && <div className='sm:hidden'>{memoizedBiGram}</div>}
                 {/* Non-mobile: Always render */}
                 <div className="hidden sm:block">{memoizedBiGram}</div>
 
