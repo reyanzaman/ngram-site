@@ -706,7 +706,7 @@ export default function Home() {
                         <div className="min-h-[12.8rem]">
                            <p className="text-gray-500 pl-2">Loading results...</p>
                         </div>
-                    ) : searchedTopics.length > 0 ? (
+                    ) : keyboardOpen ? (
                       <>
                         {Object.entries(groupedTopics).map(([gram, topics], idx) => (
                           <div key={gram} id={`gram-${idx + 1}`} className="mb-4 min-h-[12.8rem]">
