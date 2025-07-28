@@ -4,10 +4,6 @@ import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 're
 import { GrFormNext, GrFormPrevious } from "react-icons/gr";
 import ArabicKeyboard from '@/app/utils/keyboard';
 
-function isMobileDevice() {
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
-
 export default function Home() {
 
   // States Variables
@@ -683,25 +679,16 @@ export default function Home() {
                     placeholder="Search Text Patterns . . ."
                     className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226] pr-10"
                     value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    onClick={(e) => {
+                    readOnly
+                    onClick={() => {
                       setKeyboardOpen(true);
-
-                      // Optional: manually blur on tap to prevent keyboard
-                      if (isMobileDevice()) {
-                        // Delay the blur to allow long-press to trigger paste menu
-                        setTimeout(() => {
-                          if (document.activeElement === e.target) {
-                            e.target.blur();
-                          }
-                        }, 100); // Short delay gives paste menu a chance
-                      }
+                      // Do NOT blur — just keep it focused
                     }}
                     onPaste={(e) => {
                       const pastedText = e.clipboardData?.getData('text');
                       if (pastedText) {
                         setSearchInput(pastedText);
-                        e.preventDefault(); // Optional: to block double paste (if any)
+                        e.preventDefault(); // Prevent double-insert
                       }
                     }}
                   />
