@@ -674,24 +674,26 @@ export default function Home() {
               <div className="w-full lg:mb-2 lg:mt-0 mb-2 mt-2 flex items-center gap-2">
                 {/* Input and Cross Button in relative container */}
                 <div className="relative w-full">
-                  <input
-                    type="text"
-                    placeholder="Search Text Patterns . . ."
+                  <div
+                    contentEditable
+                    suppressContentEditableWarning
+                    role="textbox"
+                    aria-label="Search"
                     className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226] pr-10"
-                    value={searchInput}
-                    readOnly
-                    onClick={() => {
-                      setKeyboardOpen(true);
-                      // Do NOT blur — just keep it focused
-                    }}
+                    onClick={() => setKeyboardOpen(true)}
                     onPaste={(e) => {
+                      e.preventDefault();
                       const pastedText = e.clipboardData?.getData('text');
                       if (pastedText) {
                         setSearchInput(pastedText);
-                        e.preventDefault(); // Prevent double-insert
                       }
                     }}
-                  />
+                    onInput={(e) => {
+                      setSearchInput(e.currentTarget.textContent);
+                    }}
+                  >
+                    {searchInput}
+                  </div>
                   {searchInput && (
                     <button
                       type="button"
