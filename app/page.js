@@ -670,18 +670,23 @@ export default function Home() {
 
             <main className="flex flex-col items-center w-full lg:px-8 px-1 lg:py-6 pt-4 my-0">
 
-              {/* Search Box Here */}
+              {/* Search Box */}
               <div className="w-full lg:mb-2 lg:mt-0 mb-2 mt-2 flex items-center gap-2">
                 {/* Input and Cross Button in relative container */}
                 <div className="relative w-full">
-                  <input readOnly
+                  <input
                     type="text"
                     placeholder="Search Text Patterns . . ."
                     className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226] pr-10"
                     value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
+                    readOnly
                     onClick={() => setKeyboardOpen(true)}
+                    onPaste={(e) => {
+                      const pasted = e.clipboardData.getData('text');
+                      setSearchInput(pasted);
+                    }}
                   />
+
                   {searchInput && (
                     <button
                       type="button"
