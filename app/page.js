@@ -684,12 +684,24 @@ export default function Home() {
                     className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226] pr-10"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
-                    onClick={() => {
+                    onClick={(e) => {
                       setKeyboardOpen(true);
-                    }}
-                    onFocus={(e) => {
+
+                      // Optional: manually blur on tap to prevent keyboard
                       if (isMobileDevice()) {
-                        e.target.blur(); // Prevent keyboard
+                        // Delay the blur to allow long-press to trigger paste menu
+                        setTimeout(() => {
+                          if (document.activeElement === e.target) {
+                            e.target.blur();
+                          }
+                        }, 100); // Short delay gives paste menu a chance
+                      }
+                    }}
+                    onPaste={(e) => {
+                      const pastedText = e.clipboardData?.getData('text');
+                      if (pastedText) {
+                        setSearchInput(pastedText);
+                        e.preventDefault(); // Optional: to block double paste (if any)
                       }
                     }}
                   />
