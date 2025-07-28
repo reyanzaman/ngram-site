@@ -43,6 +43,7 @@ export default function Home() {
   const [searchedTopics, setSearchedTopics] = useState([]);
   const [searchTrigger, setSearchTrigger] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const hiddenTextareaRef = useRef(null);
 
   const oneGramContainerRef = useRef(null);
   const biGramRefs = useRef({});
@@ -675,24 +676,31 @@ export default function Home() {
                 {/* Input and Cross Button in relative container */}
                 <div className="relative w-full">
                   <div
-                    contentEditable
-                    suppressContentEditableWarning
-                    role="textbox"
-                    aria-label="Search"
-                    className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226] pr-10"
-                    onClick={() => setKeyboardOpen(true)}
-                    onPaste={(e) => {
-                      e.preventDefault();
-                      const pastedText = e.clipboardData?.getData('text');
-                      if (pastedText) {
-                        setSearchInput(pastedText);
-                      }
-                    }}
-                    onInput={(e) => {
-                      setSearchInput(e.currentTarget.textContent);
+                    className="relative w-full"
+                    onClick={() => {
+                      setKeyboardOpen(true);
+                      // Focus hidden textarea for paste support
+                      hiddenTextareaRef.current?.focus();
                     }}
                   >
-                    {searchInput}
+                    {/* Fake Input Display */}
+                    <div
+                      className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] pr-10 cursor-text"
+                    >
+                      {searchInput || <span className="text-zinc-500">Search Text Patterns . . .</span>}
+                    </div>
+
+                    {/* Hidden Textarea for Paste Support */}
+                    <textarea
+                      ref={hiddenTextareaRef}
+                      readOnly
+                      className="absolute top-0 left-0 w-full h-full opacity-0 z-[-1]"
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        const pasted = e.clipboardData.getData('text');
+                        if (pasted) setSearchInput(pasted);
+                      }}
+                    />
                   </div>
                   {searchInput && (
                     <button
