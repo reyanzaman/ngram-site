@@ -728,10 +728,10 @@ export default function Home() {
               </div>
 
               {/* Search Result Display */}
-              {keyboardOpen && (
+              {(keyboardOpen || searchedTopics.length > 0) && (
                 <div
-                  className="search-scroll-container relative bg-[#1f2624] shadow-md rounded lg:mb-2 mb-0 w-full"
-                  style={{ maxHeight: '12.8rem', overflowY: 'auto' }}
+                  className="search-scroll-container relative bg-[#1f2624] shadow-md rounded lg:mb-2 mb-0 w-full mt-1"
+                  style={{ maxHeight: '14rem', overflowY: 'auto' }}
                 >
                   {/* Headers */}
                   <div className='flex flex-row justify-between items-start sticky top-0 z-20 bg-[#1f2624] px-0 shadow-xl border-[#435e43] pt-3'>
@@ -761,8 +761,6 @@ export default function Home() {
                                     setGramState('bi-gram');
                                     toggleSubThemes(matchedIndex, topic);
                                     setKeyboardOpen(false);
-                                    setSearchInput('');
-                                    setDebouncedSearch('');
 
                                     // Only on desktop, set pendingScrollId (triggers useLayoutEffect)
                                     if (isDesktop()) {
