@@ -80,30 +80,32 @@ export async function POST(request) {
 
     const client = await pool.connect();
     try {
-      // 1) Find topics by exact stemmed match
-      const stemmedTopicsRes = await client.query(
+      const trimmed = text.trim();
+
+      // ---- Topic IDs: exact on topic_stemmed, else substring on topic_stemmed ----
+      const exactRes = await client.query(
         `SELECT id FROM primary_topics WHERE topic_stemmed = $1`,
-        [text]
+        [trimmed]
       );
 
-      let topicIds = stemmedTopicsRes.rows.map(r => r.id);
-
-      // 2) If none, fall back to exact topic_text match
-      if (topicIds.length === 0) {
-        const textTopicsRes = await client.query(
-          `SELECT id FROM primary_topics WHERE topic_text = $1`,
-          [text]
+      let topicIds;
+      if (exactRes.rowCount > 0) {
+        // Exact match: only return exact topics
+        topicIds = exactRes.rows.map(r => r.id);
+      } else {
+        // Fallback to substring match on topic_stemmed
+        const subRes = await client.query(
+          `SELECT id FROM primary_topics WHERE topic_stemmed ILIKE $1`,
+          [`%${trimmed}%`]
         );
-        topicIds = textTopicsRes.rows.map(r => r.id);
+        topicIds = subRes.rows.map(r => r.id);
       }
 
-      // If still none, return empty result set
       if (topicIds.length === 0) {
         return NextResponse.json({ results: [] });
       }
 
-      // 3) Use only those topic IDs to fetch linked bigrams
-      // DISTINCT is safe here because every ORDER BY expression is selected
+      // ---- Fetch linked bigrams for those topic IDs ----
       const bigramsRes = await client.query(
         `
           SELECT DISTINCT
