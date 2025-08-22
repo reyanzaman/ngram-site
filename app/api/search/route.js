@@ -81,24 +81,80 @@ export async function POST(request) {
     const client = await pool.connect();
     try {
       const trimmed = text.trim();
+      // Support multiple space-separated terms, case-insensitive
+      const terms = trimmed.split(/\s+/).filter(Boolean);
+      const termsLower = terms.map(t => t.toLowerCase());
+      if (!termsLower.length) {
+        return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+      }
 
-      // ---- Topic IDs: exact on topic_stemmed, else substring on topic_stemmed ----
+      // ---- Topic IDs: exact token match on topic_stemmed/topic_text (space-separated fields), else substring match ----
       const exactRes = await client.query(
-        `SELECT id FROM primary_topics WHERE topic_stemmed = $1`,
-        [trimmed]
+        `
+          SELECT id
+          FROM primary_topics
+          WHERE
+            EXISTS (
+              SELECT 1
+              FROM unnest(string_to_array(lower(coalesce(topic_stemmed, '')), ' ')) AS tok
+              WHERE tok = ANY($1::text[])
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM unnest(string_to_array(lower(coalesce(topic_text, '')), ' ')) AS tok
+              WHERE tok = ANY($1::text[])
+            )
+        `,
+        [termsLower]
       );
 
       let topicIds;
       if (exactRes.rowCount > 0) {
-        // Exact match: only return exact topics
         topicIds = exactRes.rows.map(r => r.id);
       } else {
-        // Fallback to substring match on topic_text
+        // Build dynamic LIKEs for substring search across both columns
+        const likeParams = [];
+        const likeClauses = terms.map((term, i) => {
+          likeParams.push(`%${term}%`);
+          return `(topic_text ILIKE $${i + 2} OR topic_stemmed ILIKE $${i + 2})`;
+        }).join(' OR ');
+
         const subRes = await client.query(
-          `SELECT id FROM primary_topics WHERE topic_text ILIKE $1`,
-          [`%${trimmed}%`]
+          `
+            SELECT id, topic_text, topic_stemmed
+            FROM primary_topics
+            WHERE ${likeClauses}
+          `,
+          [termsLower, ...likeParams]
         );
-        topicIds = subRes.rows.map(r => r.id);
+
+        const scoreFor = (row) => {
+          const tt = (row.topic_text || '').toLowerCase();
+          const ts = (row.topic_stemmed || '').toLowerCase();
+          const LARGE = 1e9;
+          let best = LARGE;
+
+          for (const term of termsLower) {
+            const posText = tt.indexOf(term);
+            const posStem = ts.indexOf(term);
+            const pos = Math.min(
+              posText === -1 ? LARGE : posText,
+              posStem === -1 ? LARGE : posStem
+            );
+            if (pos < best) best = pos;
+          }
+
+          const len = Math.min((row.topic_text || '').length, (row.topic_stemmed || '').length) ||
+                      ((row.topic_text || '').length + (row.topic_stemmed || '').length);
+
+          return best * 1e3 + len;
+        };
+
+        const ranked = subRes.rows
+          .map(r => ({ id: r.id, score: scoreFor(r) }))
+          .sort((a, b) => a.score - b.score);
+
+        topicIds = ranked.map(r => r.id);
       }
 
       if (topicIds.length === 0) {
