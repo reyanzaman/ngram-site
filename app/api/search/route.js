@@ -93,9 +93,9 @@ export async function POST(request) {
         // Exact match: only return exact topics
         topicIds = exactRes.rows.map(r => r.id);
       } else {
-        // Fallback to substring match on topic_stemmed
+        // Fallback to substring match on topic_text
         const subRes = await client.query(
-          `SELECT id FROM primary_topics WHERE topic_stemmed ILIKE $1`,
+          `SELECT id FROM primary_topics WHERE topic_text ILIKE $1`,
           [`%${trimmed}%`]
         );
         topicIds = subRes.rows.map(r => r.id);
