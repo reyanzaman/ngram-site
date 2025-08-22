@@ -48,6 +48,9 @@ export default function Home() {
   const biGramRefs = useRef({});
   const [pendingScrollId, setPendingScrollId] = useState(null);
 
+  const latestRequestId = useRef(0);
+  const currentSearchAbort = useRef(null);
+
   const groupedTopics = searchedTopics.reduce((acc, topic) => {
     if (!acc[topic.foundInGram]) acc[topic.foundInGram] = [];
     acc[topic.foundInGram].push(topic);
@@ -59,12 +62,13 @@ export default function Home() {
     return window.innerWidth >= 640; // matches 'sm' breakpoint (Tailwind)
   }
 
-  async function fetchSearchResults(originalText) {
+  async function fetchSearchResults(originalText, opts = {}) {
     try {
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: originalText }),
+        signal: opts.signal, // ← pass AbortController signal if provided
       });
 
       if (!response.ok) {
@@ -74,25 +78,12 @@ export default function Home() {
       const data = await response.json();
       return data.results || [];
     } catch (error) {
+      // If aborted, quietly return []
+      if (error.name === 'AbortError') return [];
       console.error('Error fetching search results:', error);
       return [];
     }
   }
-
-  // Scrolls bi-gram list
-  const scrollToBiGram = (themeId) => {
-    setTimeout(() => {
-      const container = oneGramContainerRef.current;
-      const el = biGramRefs.current[themeId];
-      if (container && el) {
-        const offset = el.offsetTop - container.offsetTop;
-        container.scrollTo({
-          top: offset,
-          behavior: 'smooth',
-        });
-      }
-    }, 0);
-  };
 
   // Debounce Search Input
   useEffect(() => {
@@ -103,20 +94,49 @@ export default function Home() {
     return () => clearTimeout(timeout);
   }, [searchInput]);
 
+  // Search effect
   useEffect(() => {
     if (!debouncedSearch.trim()) {
+      if (currentSearchAbort.current) currentSearchAbort.current.abort(); // cancel in-flight
       setSearchedTopics([]);
       return;
     }
 
     async function performSearch() {
       setLoadingSearch(true);
-      const results = await fetchSearchResults(debouncedSearch);
-      setSearchedTopics(results);
-      setLoadingSearch(false);
+
+      // abort any previous request before starting a new one
+      if (currentSearchAbort.current) currentSearchAbort.current.abort();
+      const ac = new AbortController();
+      currentSearchAbort.current = ac;
+
+      const requestId = ++latestRequestId.current;
+      const query = debouncedSearch;
+
+      try {
+        const results = await fetchSearchResults(query, { signal: ac.signal });
+
+        // optional tiny delay to smooth UI
+        await new Promise(r => setTimeout(r, 150));
+
+        if (requestId === latestRequestId.current && !ac.signal.aborted) {
+          setSearchedTopics(results);
+          setLoadingSearch(false);
+        }
+      } catch (err) {
+        // ignore abort errors; only clear loading if this is still current
+        if (requestId === latestRequestId.current && !ac.signal.aborted) {
+          setLoadingSearch(false);
+        }
+      }
     }
 
     performSearch();
+
+    // abort on unmount or dependency change
+    return () => {
+      if (currentSearchAbort.current) currentSearchAbort.current.abort();
+    };
   }, [debouncedSearch, searchTrigger]);
 
   // Fetch Ayats
