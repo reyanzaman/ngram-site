@@ -30,8 +30,8 @@
 //             SELECT id, ${column}
 //             FROM ${table}
 //             WHERE ${column} ILIKE $1
-//             ORDER BY 
-//               CASE 
+//             ORDER BY
+//               CASE
 //                 WHEN ${column} ILIKE $2 THEN 0
 //                 ELSE 1
 //               END,
@@ -61,21 +61,24 @@
 //   }
 // }
 
-import { NextResponse } from 'next/server';
-import DbUtils from '@/app/api/database/db';
-import { pool } from '@/app/api/database/db';
+import { NextResponse } from "next/server";
+import DbUtils from "@/app/api/database/db";
+import { pool } from "@/app/api/database/db";
 
 export async function POST(request) {
   try {
     const { text } = await request.json();
 
     if (!text || !text.trim()) {
-      return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+      return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
     const isDbConnected = await DbUtils.checkConnection();
     if (!isDbConnected) {
-      return NextResponse.json({ error: 'Failed to connect to the database' }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to connect to the database" },
+        { status: 500 }
+      );
     }
 
     const client = await pool.connect();
@@ -83,9 +86,12 @@ export async function POST(request) {
       const trimmed = text.trim();
       // Support multiple space-separated terms, case-insensitive
       const terms = trimmed.split(/\s+/).filter(Boolean);
-      const termsLower = terms.map(t => t.toLowerCase());
+      const termsLower = terms.map((t) => t.toLowerCase());
       if (!termsLower.length) {
-        return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+        return NextResponse.json(
+          { error: "Text is required" },
+          { status: 400 }
+        );
       }
 
       // ---- Topic IDs: exact token match on topic_stemmed/topic_text (space-separated fields), else substring match ----
@@ -110,14 +116,18 @@ export async function POST(request) {
 
       let topicIds;
       if (exactRes.rowCount > 0) {
-        topicIds = exactRes.rows.map(r => r.id);
+        topicIds = exactRes.rows.map((r) => r.id);
       } else {
         // Build dynamic LIKEs for substring search across both columns
         const likeParams = [];
-        const likeClauses = terms.map((term, i) => {
-          likeParams.push(`%${term}%`);
-          return `(topic_text ILIKE $${i + 2} OR topic_stemmed ILIKE $${i + 2})`;
-        }).join(' OR ');
+        const likeClauses = terms
+          .map((term, i) => {
+            likeParams.push(`%${term}%`);
+            return `(topic_text ILIKE $${i + 1} OR topic_stemmed ILIKE $${
+              i + 1
+            })`;
+          })
+          .join(" OR ");
 
         const subRes = await client.query(
           `
@@ -125,12 +135,12 @@ export async function POST(request) {
             FROM primary_topics
             WHERE ${likeClauses}
           `,
-          [termsLower, ...likeParams]
+          likeParams
         );
 
         const scoreFor = (row) => {
-          const tt = (row.topic_text || '').toLowerCase();
-          const ts = (row.topic_stemmed || '').toLowerCase();
+          const tt = (row.topic_text || "").toLowerCase();
+          const ts = (row.topic_stemmed || "").toLowerCase();
           const LARGE = 1e9;
           let best = LARGE;
 
@@ -144,17 +154,21 @@ export async function POST(request) {
             if (pos < best) best = pos;
           }
 
-          const len = Math.min((row.topic_text || '').length, (row.topic_stemmed || '').length) ||
-                      ((row.topic_text || '').length + (row.topic_stemmed || '').length);
+          const len =
+            Math.min(
+              (row.topic_text || "").length,
+              (row.topic_stemmed || "").length
+            ) ||
+            (row.topic_text || "").length + (row.topic_stemmed || "").length;
 
           return best * 1e3 + len;
         };
 
         const ranked = subRes.rows
-          .map(r => ({ id: r.id, score: scoreFor(r) }))
+          .map((r) => ({ id: r.id, score: scoreFor(r) }))
           .sort((a, b) => a.score - b.score);
 
-        topicIds = ranked.map(r => r.id);
+        topicIds = ranked.map((r) => r.id);
       }
 
       if (topicIds.length === 0) {
@@ -162,6 +176,10 @@ export async function POST(request) {
       }
 
       // ---- Fetch linked bigrams for those topic IDs ----
+      // Ensure IDs are integers
+      // Convert topic IDs to strings, since topic_id is stored as text
+      const topicIdsText = topicIds.map(String).filter(Boolean);
+
       const bigramsRes = await client.query(
         `
           SELECT DISTINCT
@@ -173,24 +191,30 @@ export async function POST(request) {
           WHERE plbg.topic_id = ANY($1::text[])
           ORDER BY b.bi_gram_text ASC
         `,
-        [topicIds]
+        [topicIdsText]
       );
 
-      const results = bigramsRes.rows.map(row => ({
+      const results = bigramsRes.rows.map((row) => ({
         id: row.bi_gram_id,
         bi_gram_text: row.bi_gram_text,
-        foundInGram: '2-Word Text Patterns',
+        foundInGram: "2-Word Text Patterns",
       }));
 
       return NextResponse.json({ results });
     } catch (error) {
-      console.error('Error fetching search results:', error);
-      return NextResponse.json({ error: 'Error fetching search results' }, { status: 500 });
+      console.error("Error fetching search results:", error);
+      return NextResponse.json(
+        { error: "Error fetching search results" },
+        { status: 500 }
+      );
     } finally {
       client.release();
     }
   } catch (error) {
-    console.error('Search route error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error("Search route error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
