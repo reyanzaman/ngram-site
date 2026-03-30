@@ -3,6 +3,7 @@ import { pool } from "@/app/api/database/db";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
+  const lang = searchParams.get("lang") || 'en';
   const ayatId = searchParams.get("ayatId");
   const ngram = searchParams.get("ngram"); // one of: bi_grams, tri_grams, etc.
   const ngramId = searchParams.get("ngramId");
@@ -52,8 +53,21 @@ export async function GET(req) {
     // Final response
     const details = {
       ayatText: ayat.ayat_arabic_text,
-      translation: ayat.ayat_english_text,
-      surahName: `${surah.surah_name_english} - ${surah.surah_name_arabic} (${surah.id})`,
+      translation: await (async () => {
+        const transRes = await pool.query(
+          `SELECT ayat_text FROM translations WHERE ayat_id = $1 AND lang_code = $2 LIMIT 1`,
+          [ayatId, lang]
+        );
+        return transRes.rows[0]?.ayat_text || ayat.ayat_english_text;
+      })(),
+      surahName: await (async () => {
+        const stRes = await pool.query(
+          `SELECT surah_name FROM surah_translations WHERE surah_id = $1 AND lang_code = $2 LIMIT 1`,
+          [surah.id, lang]
+        );
+        const name = stRes.rows[0]?.surah_name || surah.surah_name_english;
+        return `${name} - ${surah.surah_name_arabic} (${surah.id})`;
+      })(),
       ayatNumber: ayat.ayat_no,
       before,
       after,

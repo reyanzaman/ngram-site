@@ -3,7 +3,7 @@ import DbUtils, { pool } from "@/app/api/database/db";
 
 export async function POST(req) {
   try {
-    const { level, id } = await req.json();
+    const { level, id, lang = 'en' } = await req.json();
 
     if (!level || !id) {
       return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
@@ -51,8 +51,15 @@ export async function POST(req) {
       }
 
       const placeholders = ayatIds.map((_, i) => `$${i + 1}`).join(", ");
-      const ayatQuery = `SELECT * FROM ayats WHERE id IN (${placeholders})`;
-      const ayatResult = await client.query(ayatQuery, ayatIds);
+      const ayatQuery = `
+        SELECT 
+          a.id, a.surah_id, a.ayat_no, a.ayat_arabic_text,
+          COALESCE(t.ayat_text, a.ayat_english_text) AS ayat_english_text
+        FROM ayats a
+        LEFT JOIN translations t ON t.ayat_id = a.id AND t.lang_code = $${ayatIds.length + 1}
+        WHERE a.id IN (${placeholders})
+      `;
+      const ayatResult = await client.query(ayatQuery, [...ayatIds, lang]);
 
       const ayats = ayatResult.rows;
       return NextResponse.json({ ayats });

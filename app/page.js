@@ -51,6 +51,8 @@ export default function Home() {
   const latestRequestId = useRef(0);
   const currentSearchAbort = useRef(null);
 
+  const [selectedLang, setSelectedLang] = useState('en');
+
   const groupedTopics = searchedTopics.reduce((acc, topic) => {
     if (!acc[topic.foundInGram]) acc[topic.foundInGram] = [];
     acc[topic.foundInGram].push(topic);
@@ -171,7 +173,7 @@ export default function Home() {
         const res = await fetch("/api/get/ayats", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ level, id: gram.id }),
+          body: JSON.stringify({ level, id: gram.id, lang: selectedLang }),
         });
         const data = await res.json();
         setAyats(data.ayats || []);
@@ -184,7 +186,7 @@ export default function Home() {
     };
 
     fetchAyats();
-  }, [selectedTheme, selectedSubTheme, selectedThematicTopic, selectedThematicContext]);
+  }, [selectedTheme, selectedSubTheme, selectedThematicTopic, selectedThematicContext, selectedLang]);
 
   // Fetch Ayat Details when selectedAyatIndex changes
   useEffect(() => {
@@ -213,7 +215,7 @@ export default function Home() {
       try {
         const selectedAyatId = ayats[selectedAyatIndex].id;
         const res = await fetch(
-          `/api/get/ayat-details?ngram=${selectedPatternType}&ngramId=${selectedPatternId}&ayatId=${selectedAyatId}`
+          `/api/get/ayat-details?ngram=${selectedPatternType}&ngramId=${selectedPatternId}&ayatId=${selectedAyatId}&lang=${selectedLang}`
         );
         const data = await res.json();
         setAyatDetails(data.details || []);
@@ -225,7 +227,7 @@ export default function Home() {
     };
 
     fetchAyatDetails();
-  }, [selectedAyatIndex]);
+  }, [selectedAyatIndex, selectedLang]);
 
   // Scroll to Bi Gram when pendingScrollId is set
   useLayoutEffect(() => {
@@ -686,6 +688,23 @@ export default function Home() {
               <h1 className="font-julius-sans lg:text-4xl md:text-3xl text-2xl text-center font-bold">Thematic Text-Pattern Searching</h1>
               <h3 className="font-julius-sans lg:text-2xl md:text-xl text-base text-center">for Al-Qur'an</h3>
               <hr className="w-full lg:my-6 my-3 border-zinc-400"></hr>
+              <div className="flex justify-center gap-3 mt-3 mb-1">
+                {[
+                  { code: 'en', label: 'English' },
+                  { code: 'bn', label: 'বাংলা' },
+                ].map(({ code, label }) => (
+                  <button
+                    key={code}
+                    onClick={() => setSelectedLang(code)}
+                    className={`px-3 py-1 rounded text-sm border border-[#3a403e] transition-colors
+                      ${selectedLang === code
+                        ? 'bg-[#294a32] text-green-200 border-green-800'
+                        : 'bg-[#1f2624] text-zinc-400 hover:text-zinc-200'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </header>
 
             <main className="flex flex-col items-center w-full lg:px-8 px-1 lg:py-6 pt-4 my-0">
