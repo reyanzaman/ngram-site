@@ -3,6 +3,172 @@
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { GrFormNext, GrFormPrevious } from "react-icons/gr";
 import ArabicKeyboard from '@/app/utils/keyboard';
+import { stemArabicPhrase } from '@/app/utils/arabicStemmer';
+import next from 'next';
+
+const translations = {
+  en: {
+    // Search
+    searchPlaceholder: "Search Text Patterns . . .",
+    searchResultsLabel: "Search Results",
+    searchResultsPatterns: (n) => `${n} Patterns`,
+    searchResultsDash: "-",
+    loadingResults: "Loading results...",
+    searchHint: "Search for patterns using the arabic keyboard below",
+    // Selected Pattern
+    selectedPattern: "Selected Pattern:",
+    selectedPatternNone: "None",
+    // N-Gram headings
+    biGramHeading: "Repeating 2-Word Text Patterns",
+    triGramHeading: "Repeating 3-word Text Patterns",
+    fourGramHeading: "Repeating 4-word text patterns",
+    fiveGramHeading: "Repeating 5-word text patterns",
+    // N-Gram loading / empty states
+    loadingBiGram: "Loading text patterns...",
+    noThemes: "No themes available",
+    loadingTriGram: "Loading repeating 3-word text patterns...",
+    noTriGram: "No repeating 3-word text patterns available. Please see the Ayats below that contain the text-pattern",
+    selectBiGramFirst: "Select a text pattern to view repeating 3 word text patterns",
+    loadingFourGram: "Loading repeating 4-word text patterns...",
+    noFourGram: "No repeating 4-word text patterns available. Please see the Ayats below that contain the text-pattern",
+    selectTriGramFirst: "Select a repeating 3-word text pattern to view repeating 5-word text patterns",
+    loadingFiveGram: "Loading repeating 5-word text patterns...",
+    noFiveGram: "No repeating 5-word text patterns available. Please see the Ayats below that contain the text-pattern",
+    selectFourGramFirst: "Select a repeating 4-word text pattern to view repeating 5-word text patterns",
+    // Pattern count
+    patterns: (n) => n > 1 ? `${n} Patterns` : `${n} Pattern`,
+    // Navigation buttons
+    next: "Next",
+    back: "Back",
+    nextAyat: "Next Ayat",
+    backAyat: "Previous Ayat",
+    resetAyat: "Reset Ayat",
+    // Ayat list
+    correspondingAyats: "Corresponding Ayats",
+    loadingAyats: "Loading Ayats...",
+    correspondingAyatsFound: (n) => `Corresponding Ayats ( Found: ${n} )`,
+    selectAyatHint: "Select ayat to view details",
+    selectPatternHint: "Select a text pattern or n-word repeating text pattern to view Ayats.",
+    loadingAyatsList: "Loading Ayats...",
+    noAyatsFound: "No Ayats found for the selected topic.",
+    // Before / After / Pattern
+    after: "After",
+    before: "Before",
+    selectedPatternLabel: "Selected Pattern",
+    loading: "Loading...",
+    // Ayat details
+    detailsHeading: "Details of selected Ayat",
+    selectedAyatLabel: "Selected Ayat : ",
+    surahName: "Surah Name : ",
+    ayatNumber: "Ayat Number : ",
+    ayatTranslation: "Ayat Translation : ",
+    // Ayats panel heading
+    ayatsHeading: "Ayats",
+    invalidAyat: "Invalid Ayat Data",
+    // Global loading
+    globalLoading: "Loading...",
+  },
+  bn: {
+    searchPlaceholder: "টেক্সট প্যাটার্ন অনুসন্ধান করুন . . .",
+    searchResultsLabel: "অনুসন্ধান ফলাফল",
+    searchResultsPatterns: (n) => `${n}টি প্যাটার্ন`,
+    searchResultsDash: "-",
+    loadingResults: "ফলাফল লোড হচ্ছে...",
+    searchHint: "নিচের আরবি কীবোর্ড ব্যবহার করে প্যাটার্ন অনুসন্ধান করুন",
+    selectedPattern: "নির্বাচিত প্যাটার্ন:",
+    selectedPatternNone: "কোনোটি নয়",
+    biGramHeading: "পুনরাবৃত্ত ২-শব্দের টেক্সট প্যাটার্ন",
+    triGramHeading: "পুনরাবৃত্ত ৩-শব্দের টেক্সট প্যাটার্ন",
+    fourGramHeading: "পুনরাবৃত্ত ৪-শব্দের টেক্সট প্যাটার্ন",
+    fiveGramHeading: "পুনরাবৃত্ত ৫-শব্দের টেক্সট প্যাটার্ন",
+    loadingBiGram: "টেক্সট প্যাটার্ন লোড হচ্ছে...",
+    noThemes: "কোনো বিষয় পাওয়া যায়নি",
+    loadingTriGram: "পুনরাবৃত্ত ৩-শব্দের প্যাটার্ন লোড হচ্ছে...",
+    noTriGram: "কোনো পুনরাবৃত্ত ৩-শব্দের প্যাটার্ন পাওয়া যায়নি। নিচে আয়াতগুলো দেখুন যেগুলোতে এই টেক্সট প্যাটার্ন রয়েছে",
+    selectBiGramFirst: "পুনরাবৃত্ত ৩-শব্দের প্যাটার্ন দেখতে একটি টেক্সট প্যাটার্ন নির্বাচন করুন",
+    loadingFourGram: "পুনরাবৃত্ত ৪-শব্দের প্যাটার্ন লোড হচ্ছে...",
+    noFourGram: "কোনো পুনরাবৃত্ত ৪-শব্দের প্যাটার্ন পাওয়া যায়নি। নিচে আয়াতগুলো দেখুন যেগুলোতে এই টেক্সট প্যাটার্ন রয়েছে",
+    selectTriGramFirst: "পুনরাবৃত্ত ৫-শব্দের প্যাটার্ন দেখতে একটি ৩-শব্দের প্যাটার্ন নির্বাচন করুন",
+    loadingFiveGram: "পুনরাবৃত্ত ৫-শব্দের প্যাটার্ন লোড হচ্ছে...",
+    noFiveGram: "কোনো পুনরাবৃত্ত ৫-শব্দের প্যাটার্ন পাওয়া যায়নি। নিচে আয়াতগুলো দেখুন যেগুলোতে এই টেক্সট প্যাটার্ন রয়েছে",
+    selectFourGramFirst: "পুনরাবৃত্ত ৫-শব্দের প্যাটার্ন দেখতে একটি ৪-শব্দের প্যাটার্ন নির্বাচন করুন",
+    patterns: (n) => n > 1 ? `${n}টি প্যাটার্ন` : `${n}টি প্যাটার্ন`,
+    next: "পরবর্তী",
+    back: "পূর্ববর্তী",
+    correspondingAyats: "সংশ্লিষ্ট আয়াত",
+    loadingAyats: "আয়াত লোড হচ্ছে...",
+    correspondingAyatsFound: (n) => `সংশ্লিষ্ট আয়াত ( পাওয়া গেছে: ${n} )`,
+    selectAyatHint: "বিস্তারিত দেখতে আয়াত নির্বাচন করুন",
+    selectPatternHint: "আয়াত দেখতে একটি টেক্সট প্যাটার্ন বা n-শব্দের পুনরাবৃত্ত প্যাটার্ন নির্বাচন করুন।",
+    loadingAyatsList: "আয়াত লোড হচ্ছে...",
+    noAyatsFound: "নির্বাচিত বিষয়ের জন্য কোনো আয়াত পাওয়া যায়নি।",
+    after: "পরে",
+    before: "আগে",
+    nextAyat: "পরবর্তী আয়াত",
+    backAyat: "পূর্ববর্তী আয়াত",
+    resetAyat: "রিসেট আয়াত",
+    selectedPatternLabel: "নির্বাচিত প্যাটার্ন",
+    loading: "লোড হচ্ছে...",
+    detailsHeading: "নির্বাচিত আয়াতের বিবরণ",
+    selectedAyatLabel: "নির্বাচিত আয়াত : ",
+    surahName: "সূরার নাম : ",
+    ayatNumber: "আয়াত নম্বর : ",
+    ayatTranslation: "আয়াতের অনুবাদ : ",
+    ayatsHeading: "আয়াত",
+    invalidAyat: "অবৈধ আয়াত তথ্য",
+    globalLoading: "লোড হচ্ছে...",
+  },
+  ms: {
+    searchPlaceholder: "Cari Corak Teks . . .",
+    searchResultsLabel: "Keputusan Carian",
+    searchResultsPatterns: (n) => `${n} Corak`,
+    searchResultsDash: "-",
+    loadingResults: "Memuatkan keputusan...",
+    searchHint: "Cari corak menggunakan papan kekunci Arab di bawah",
+    selectedPattern: "Corak Dipilih:",
+    selectedPatternNone: "Tiada",
+    biGramHeading: "Corak Teks 2 Perkataan Berulang",
+    triGramHeading: "Corak Teks 3 Perkataan Berulang",
+    fourGramHeading: "Corak Teks 4 Perkataan Berulang",
+    fiveGramHeading: "Corak Teks 5 Perkataan Berulang",
+    loadingBiGram: "Memuatkan corak teks...",
+    noThemes: "Tiada tema tersedia",
+    loadingTriGram: "Memuatkan corak teks 3 perkataan berulang...",
+    noTriGram: "Tiada corak teks 3 perkataan berulang tersedia. Sila lihat Ayat di bawah yang mengandungi corak teks ini",
+    selectBiGramFirst: "Pilih corak teks untuk melihat corak teks 3 perkataan berulang",
+    loadingFourGram: "Memuatkan corak teks 4 perkataan berulang...",
+    noFourGram: "Tiada corak teks 4 perkataan berulang tersedia. Sila lihat Ayat di bawah yang mengandungi corak teks ini",
+    selectTriGramFirst: "Pilih corak teks 3 perkataan berulang untuk melihat corak teks 5 perkataan berulang",
+    loadingFiveGram: "Memuatkan corak teks 5 perkataan berulang...",
+    noFiveGram: "Tiada corak teks 5 perkataan berulang tersedia. Sila lihat Ayat di bawah yang mengandungi corak teks ini",
+    selectFourGramFirst: "Pilih corak teks 4 perkataan berulang untuk melihat corak teks 5 perkataan berulang",
+    patterns: (n) => n > 1 ? `${n} Corak` : `${n} Corak`,
+    next: "Seterusnya",
+    back: "Kembali",
+    nextAyat: "Ayat Seterusnya",
+    backAyat: "Ayat Sebelumnya",
+    resetAyat: "Reset Ayat",
+    correspondingAyats: "Ayat Berkaitan",
+    loadingAyats: "Memuatkan Ayat...",
+    correspondingAyatsFound: (n) => `Ayat Berkaitan ( Dijumpai: ${n} )`,
+    selectAyatHint: "Pilih ayat untuk melihat butiran",
+    selectPatternHint: "Pilih corak teks atau corak teks n-perkataan berulang untuk melihat Ayat.",
+    loadingAyatsList: "Memuatkan Ayat...",
+    noAyatsFound: "Tiada Ayat dijumpai untuk topik yang dipilih.",
+    after: "Selepas",
+    before: "Sebelum",
+    selectedPatternLabel: "Corak Dipilih",
+    loading: "Memuatkan...",
+    detailsHeading: "Butiran Ayat yang Dipilih",
+    selectedAyatLabel: "Ayat Dipilih : ",
+    surahName: "Nama Surah : ",
+    ayatNumber: "Nombor Ayat : ",
+    ayatTranslation: "Terjemahan Ayat : ",
+    ayatsHeading: "Ayat",
+    invalidAyat: "Data Ayat Tidak Sah",
+    globalLoading: "Memuatkan...",
+  },
+};
 
 export default function Home() {
 
@@ -27,7 +193,7 @@ export default function Home() {
   const [thematicTopics, setThematicTopics] = useState([]);
   const [thematicContexts, setThematicContexts] = useState([]);
   const [ayats, setAyats] = useState([]);
-  const [ayatDetails, setAyatDetails] = useState([]);
+  const [ayatDetailsMap, setAyatDetailsMap] = useState({});
 
   const [loading, setLoading] = useState(false);
   const [loadingThemes, setLoadingThemes] = useState(false);
@@ -47,11 +213,93 @@ export default function Home() {
   const oneGramContainerRef = useRef(null);
   const biGramRefs = useRef({});
   const [pendingScrollId, setPendingScrollId] = useState(null);
+  const ayatListRef = useRef(null);
+  const ayatItemRefs = useRef({});
 
   const latestRequestId = useRef(0);
   const currentSearchAbort = useRef(null);
 
   const [selectedLang, setSelectedLang] = useState('en');
+
+  const [surahAyats, setSurahAyats] = useState([]);
+  const [surahAyatIndex, setSurahAyatIndex] = useState(null);
+  const [currentAyat, setCurrentAyat] = useState(null);
+  const [surahCache, setSurahCache] = useState({});
+  const [lastDetails, setLastDetails] = useState(null);
+
+  // currentDetails: whatever the API returned for the current ayat (may have null before/after)
+  const currentDetails = currentAyat ? ayatDetailsMap[currentAyat.id] : undefined;
+  const hasCurrentRealDetails = currentDetails?.before != null || currentDetails?.after != null;
+
+  // displayDetails: for before/after we fall back to lastDetails (the last pattern-matching ayat)
+  // so those fields stay visible when navigating to surrounding ayats.
+  // For surahName/ayatNumber/translation we always use currentDetails so they update live.
+  const displayDetails = {
+    // Metadata always reflects the current ayat
+    surahName: currentDetails?.surahName,
+    ayatNumber: currentDetails?.ayatNumber,
+    translation: currentDetails?.translation,
+    ayatText: currentDetails?.ayatText,
+    // Before/after come from current if real, otherwise last known good
+    before: hasCurrentRealDetails ? currentDetails?.before : lastDetails?.before,
+    after: hasCurrentRealDetails ? currentDetails?.after : lastDetails?.after,
+  };
+
+  useEffect(() => {
+    const fetchSurah = async () => {
+      if (!currentAyat) return;
+
+      const surahId = currentAyat.surah_id;
+
+      // ✅ 1. FROM CACHE
+      if (surahCache[surahId]) {
+        const cached = surahCache[surahId];
+
+        setSurahAyats(cached);
+
+        const index = cached.findIndex(
+          a => a.id === currentAyat.id
+        );
+        setSurahAyatIndex(index);
+
+        return;
+      }
+
+      // ✅ 2. FETCH
+      try {
+        const res = await fetch(
+          `/api/get/surah-ayats?surah_id=${surahId}&lang=${selectedLang}`
+        );
+
+        const data = await res.json();
+        const fullSurah = data.ayats || [];
+
+        setSurahAyats(fullSurah);
+
+        // ✅ SAVE CACHE
+        setSurahCache(prev => ({
+          ...prev,
+          [surahId]: fullSurah
+        }));
+
+        // ✅ CALCULATE INDEX HERE (inside scope)
+        const index = fullSurah.findIndex(
+          a => a.id === currentAyat.id
+        );
+        setSurahAyatIndex(index);
+
+      } catch (e) {
+        console.error("Error fetching surah", e);
+      }
+    };
+
+    fetchSurah();
+  }, [currentAyat?.surah_id, selectedLang]);
+
+  const t = (key, ...args) => {
+    const val = (translations[selectedLang] || translations.en)[key];
+    return typeof val === 'function' ? val(...args) : (val ?? key);
+  };
 
   const groupedTopics = searchedTopics.reduce((acc, topic) => {
     if (!acc[topic.foundInGram]) acc[topic.foundInGram] = [];
@@ -116,7 +364,8 @@ export default function Home() {
       const query = debouncedSearch;
 
       try {
-        const results = await fetchSearchResults(query, { signal: ac.signal });
+        const stemmedQuery = stemArabicPhrase(query);
+        const results = await fetchSearchResults(stemmedQuery, { signal: ac.signal });
 
         // optional tiny delay to smooth UI
         await new Promise(r => setTimeout(r, 150));
@@ -191,9 +440,9 @@ export default function Home() {
   // Fetch Ayat Details when selectedAyatIndex changes
   useEffect(() => {
     const fetchAyatDetails = async () => {
-      if (selectedAyatIndex === null) return;
+      if (!currentAyat) return;
 
-      // Determine the highest-order selected n-gram
+      // ✅ DEFINE THEM HERE
       let selectedPatternType = null;
       let selectedPatternId = null;
 
@@ -211,42 +460,60 @@ export default function Home() {
         selectedPatternId = selectedTheme.id;
       }
 
+      // ✅ stop if nothing selected
+      if (!selectedPatternType || !selectedPatternId) return;
+
       setLoadingDetails(true);
+
       try {
-        const selectedAyatId = ayats[selectedAyatIndex].id;
         const res = await fetch(
-          `/api/get/ayat-details?ngram=${selectedPatternType}&ngramId=${selectedPatternId}&ayatId=${selectedAyatId}&lang=${selectedLang}`
+          `/api/get/ayat-details?ngram=${selectedPatternType}&ngramId=${selectedPatternId}&ayatId=${currentAyat.id}&lang=${selectedLang}`
         );
+
         const data = await res.json();
-        setAyatDetails(data.details || []);
+
+        const hasRealDetails = data.details?.before != null || data.details?.after != null;
+
+        setAyatDetailsMap(prev => ({
+          ...prev,
+          [currentAyat.id]: data.details || null
+        }));
+
+        // Only update lastDetails when the ayat actually has before/after content.
+        // This preserves the last valid before/after when navigating to surrounding ayats.
+        if (hasRealDetails) {
+          setLastDetails(data.details);
+        }
+
       } catch (e) {
         console.error("Error fetching ayat details", e);
-        setAyatDetails([]);
+        setAyatDetailsMap(prev => ({
+          ...prev,
+          [currentAyat.id]: null
+        }));
       }
+
       setLoadingDetails(false);
     };
 
     fetchAyatDetails();
-  }, [selectedAyatIndex, selectedLang]);
+  }, [
+    currentAyat,
+    selectedTheme,
+    selectedSubTheme,
+    selectedThematicTopic,
+    selectedThematicContext,
+    selectedLang
+  ]);
 
-  // Scroll to Bi Gram when pendingScrollId is set
-  useLayoutEffect(() => {
-    if (!pendingScrollId) return;
-    let tries = 0;
-    function tryScroll() {
-      const el = biGramRefs.current[pendingScrollId];
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setPendingScrollId(null);
-      } else if (tries < 8) {
-        tries++;
-        setTimeout(tryScroll, 120);
-      } else {
-        setPendingScrollId(null);
-      }
+  // Scroll selected ayat into view inside the ayat list panel
+  useEffect(() => {
+    if (!currentAyat) return;
+    const el = ayatItemRefs.current[selectedAyatIndex];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-    tryScroll();
-  }, [pendingScrollId, primaryThemes, subOpenIndex]);
+  }, [selectedAyatIndex]);
 
   // Toggle Bi Gram
   const toggleSubThemes = (subIndex, theme) => {
@@ -270,7 +537,6 @@ export default function Home() {
       setSelectedTheme(theme);
 
       setSelectedAyatIndex(null);
-      setAyatDetails(null);
       setSelectedSubTheme(null);
       setSelectedThematicTopic(null);
       setSelectedThematicContext(null);
@@ -313,7 +579,6 @@ export default function Home() {
 
       // Clear deeper selections and show loading message
       setSelectedAyatIndex(null);
-      setAyatDetails(null);
       setSelectedThematicTopic(null);
       setSelectedThematicContext(null);
       setContextOpenIndex(null);
@@ -348,7 +613,6 @@ export default function Home() {
 
       // Clear deeper selections and show loading message
       setSelectedAyatIndex(null);
-      setAyatDetails(null);
       setSelectedThematicContext(null);
       setfiveGramOpenIndex(null);
 
@@ -367,13 +631,11 @@ export default function Home() {
     // If it's the same index, deselect it and reset higher levels
     if (isSameIndex) {
       setSelectedAyatIndex(null);
-      setAyatDetails(null);
       setfiveGramOpenIndex(null);
       setSelectedThematicContext(null);
     } else {
       // If it's a new five-gram, select it
       setSelectedAyatIndex(null);
-      setAyatDetails(null);
       setfiveGramOpenIndex(index);
       setSelectedThematicContext(context);
     }
@@ -471,7 +733,7 @@ export default function Home() {
   const renderBiGramContent = () => (
     <>
       <h3 className="font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-100">
-        Repeating 2-Word Text Patterns
+        {t('biGramHeading')}
       </h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div
@@ -479,7 +741,7 @@ export default function Home() {
           className="rounded lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base"
         >
           {loadingThemes ? (
-            <p className="text-gray-500">Loading text patterns...</p>
+            <p className="text-gray-500">{t('loadingBiGram')}</p>
           ) : primaryThemes.length > 0 ? (
             <ul>
               {primaryThemes.map((theme, index) => (
@@ -496,24 +758,24 @@ export default function Home() {
               ))}
             </ul>
           ) : (
-            <p className="text-gray-500">No themes available</p>
+            <p className="text-gray-500">{t('noThemes')}</p>
           )}
         </div>
       </div>
-      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{primaryThemes.length > 1 ? `${primaryThemes.length} Patterns` : `${primaryThemes.length} Pattern`}</p>
+      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{t('patterns', primaryThemes.length)}</p>
     </>
   );
 
   const renderTriGramContent = () => (
     <>
       <h3 className={`font-julius-sans font-bold lg:text-xl text-lg py-1 ${selectedTheme ? 'text-zinc-100' : 'text-zinc-600'}`}>
-        Repeating 3-word Text Patterns
+        {t('triGramHeading')}
       </h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div className="lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           {selectedTheme ? (
             loadingSubThemes ? (
-              <p className="text-gray-500">Loading repeating 3-word text patterns...</p>
+              <p className="text-gray-500">{t('loadingTriGram')}</p>
             ) : subThemes.length > 0 ? (
               <ul>
                 {subThemes.map((theme, index) => (
@@ -530,28 +792,28 @@ export default function Home() {
               </ul>
             ) : (
               <>
-                <p className="text-gray-500">No repeating 3-word text patterns available. Please see the Ayats below that contain the text-pattern</p>
+                <p className="text-gray-500">{t('noTriGram')}</p>
               </>
             )
           ) : (
             <>
-              <p className="text-gray-500">Select a text pattern to view repeating 3 word text patterns</p>
+              <p className="text-gray-500">{t('selectBiGramFirst')}</p>
             </>
           )}
         </div>
       </div>
-      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{subThemes.length > 1 ? `${subThemes.length} Patterns` : `${subThemes.length} Pattern`}</p>
+      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{t('patterns', subThemes.length)}</p>
     </>
   );
 
   const renderFourGramContent = () => (
     <>
-      <h3 className={`font-julius-sans font-bold lg:text-xl text-lg py-1 ${selectedSubTheme ? 'text-zinc-100' : 'text-zinc-600'}`}>Repeating 4-word text patterns</h3>
+      <h3 className={`font-julius-sans font-bold lg:text-xl text-lg py-1 ${selectedSubTheme ? 'text-zinc-100' : 'text-zinc-600'}`}>{t('fourGramHeading')}</h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div className="lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           {selectedSubTheme ? (
             loadingThematicTopics ? (
-              <p className="text-gray-500">Loading repeating 4-word text patterns...</p>
+              <p className="text-gray-500">{t('loadingFourGram')}</p>
             ) : thematicTopics.length > 0 ? (
               <ul>
                 {thematicTopics.map((thematicTopic, index) => (
@@ -567,25 +829,25 @@ export default function Home() {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">No repeating 4-word text patterns available. Please see the Ayats below that contain the text-pattern</p>
+              <p className="text-gray-500">{t('noFourGram')}</p>
             )
           ) : (
-            <p className="text-gray-500">Select a repeating 3-word text pattern to view repeating 5-word text patterns</p>
+            <p className="text-gray-500">{t('selectTriGramFirst')}</p>
           )}
         </div>
       </div>
-      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{thematicTopics.length > 1 ? `${thematicTopics.length} Patterns` : `${thematicTopics.length} Pattern`}</p>
+      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{t('patterns', thematicTopics.length)}</p>
     </>
   );
 
   const renderFiveGramContent = () => (
     <>
-      <h3 className={`font-julius-sans font-bold lg:text-xl text-lg py-1 ${selectedThematicTopic ? 'text-zinc-100' : 'text-zinc-600'}`}>Repeating 5-word text patterns</h3>
+      <h3 className={`font-julius-sans font-bold lg:text-xl text-lg py-1 ${selectedThematicTopic ? 'text-zinc-100' : 'text-zinc-600'}`}>{t('fiveGramHeading')}</h3>
       <div className="bg-[#1f2624] shadow-md rounded py-3">
         <div className="lg:p-4 p-3 lg:h-[31rem] h-[14rem] text-zinc-200 overflow-auto lg:text-lg text-base">
           {selectedThematicTopic ? (
             loadingThematicContexts ? (
-              <p className="text-gray-500">Loading repeating 5-word text patterns...</p>
+              <p className="text-gray-500">{t('loadingFiveGram')}</p>
             ) : thematicContexts.length > 0 ? (
               <ul>
                 {thematicContexts.map((thematicContext, index) => (
@@ -601,14 +863,14 @@ export default function Home() {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">No repeating 5-word text patterns available. Please see the Ayats below that contain the text-pattern</p>
+              <p className="text-gray-500">{t('noFiveGram')}</p>
             )
           ) : (
-            <p className="text-gray-500">Select a repeating 4-word text pattern to view repeating 5-word text patterns</p>
+            <p className="text-gray-500">{t('selectFourGramFirst')}</p>
           )}
         </div>
       </div>
-      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{thematicContexts.length > 1 ? `${thematicContexts.length} Patterns` : `${thematicContexts.length} Pattern`}</p>
+      <p className='text-sm pt-3 font-bold text-green-100 opacity-40'>{t('patterns', thematicContexts.length)}</p>
     </>
   );
 
@@ -618,7 +880,7 @@ export default function Home() {
       className="my-4 w-full bg-[#39413e] hover:bg-[#5b6763] focus:outline-2 focus:outline-offset-2 focus:outline-[#5b6763] active:bg-[#6d7875] rounded-sm py-1"
     >
       <div className="flex items-center justify-center">
-        Next <GrFormNext className="text-xl" />
+        {t('next')} <GrFormNext className="text-xl" />
       </div>
     </button>
   );
@@ -629,7 +891,7 @@ export default function Home() {
       className="my-4 w-full bg-[#39413e] hover:bg-[#5b6763] focus:outline-2 focus:outline-offset-2 focus:outline-[#5b6763] active:bg-[#6d7875] rounded-sm py-1"
     >
       <div className="flex items-center justify-center">
-        <GrFormPrevious className="text-xl" /> Back
+        <GrFormPrevious className="text-xl" /> {t('back')}
       </div>
     </button>
   );
@@ -641,6 +903,7 @@ export default function Home() {
     loadingThemes,
     subOpenIndex,
     selectedTopic,
+    selectedLang,
   ]);
 
   const memoizedTriGram = useMemo(() => renderTriGramContent(), [
@@ -650,6 +913,7 @@ export default function Home() {
     openIndex,
     subOpenIndex,
     selectedSubTheme,
+    selectedLang,
   ]);
 
   const memoizedFourGram = useMemo(() => renderFourGramContent(), [
@@ -659,6 +923,7 @@ export default function Home() {
     openIndex,
     thematicOpenIndex,
     selectedThematicTopic,
+    selectedLang,
   ]);
 
   const memoizedFiveGram = useMemo(() => renderFiveGramContent(), [
@@ -667,7 +932,72 @@ export default function Home() {
     loadingThematicContexts,
     fiveGramOpenIndex,
     selectedThematicContext,
+    selectedLang,
   ]);
+
+  const goToNextAyat = () => {
+    if (surahAyatIndex === null) return;
+
+    const nextIndex = surahAyatIndex + 1;
+    if (nextIndex >= surahAyats.length) return;
+
+    const nextAyat = surahAyats[nextIndex];
+
+    setSurahAyatIndex(nextIndex);
+    setCurrentAyat(nextAyat);
+
+    const newIndex = ayats.findIndex(a => a.id === nextAyat.id);
+    if (newIndex !== -1) {
+      setSelectedAyatIndex(newIndex);
+    }
+  };
+
+  const goToPrevAyat = () => {
+    if (surahAyatIndex === null) return;
+
+    const prevIndex = surahAyatIndex - 1;
+    if (prevIndex < 0) return;
+
+    const prevAyat = surahAyats[prevIndex];
+
+    setSurahAyatIndex(prevIndex);
+    setCurrentAyat(prevAyat);
+
+    const newIndex = ayats.findIndex(a => a.id === prevAyat.id);
+    if (newIndex !== -1) {
+      setSelectedAyatIndex(newIndex);
+    }
+  };
+
+  const handleReset = () => {
+    if (selectedAyatIndex === null || ayats.length === 0) return;
+
+    const baseAyat = ayats[selectedAyatIndex];
+
+    setCurrentAyat(baseAyat);
+
+    // reset surah index to match selected ayat
+    const indexInSurah = surahAyats.findIndex(a => a.id === baseAyat.id);
+    if (indexInSurah !== -1) {
+      setSurahAyatIndex(indexInSurah);
+    }
+  };
+
+  const handleAyatClick = (ayat, idx) => {
+    // set selected ayat
+    setCurrentAyat(ayat);
+    setSelectedAyatIndex(idx);
+
+    if (surahAyats.length > 0) {
+      const indexInSurah = surahAyats.findIndex(
+        a => a.id === ayat.id
+      );
+
+      if (indexInSurah !== -1) {
+        setSurahAyatIndex(indexInSurah);
+      }
+    }
+  };
 
   // UI Rendering
   return (
@@ -677,7 +1007,7 @@ export default function Home() {
           <div className="fixed inset-0 bg-[#141a17] flex justify-center items-center z-50">
             <div className="text-center">
               <div className="animate-spin rounded-full border-t-4 border-green-500 border-solid h-16 w-16 mb-4 mx-auto"></div>
-              <p className="text-white text-xl p-0 m-0 mx-auto">Loading...</p>
+              <p className="text-white text-xl p-0 m-0 mx-auto">{t('globalLoading')}</p>
             </div>
           </div>
         ) : (
@@ -692,6 +1022,7 @@ export default function Home() {
                 {[
                   { code: 'en', label: 'English' },
                   { code: 'bn', label: 'বাংলা' },
+                  { code: 'ms', label: 'Bahasa Melayu' },
                 ].map(({ code, label }) => (
                   <button
                     key={code}
@@ -705,6 +1036,18 @@ export default function Home() {
                   </button>
                 ))}
               </div>
+
+              {/* Translator credit */}
+              {selectedLang === 'bn' && (
+                <p className="text-center text-xs text-zinc-500 mt-3">
+                  Bengali translation by <span className="text-zinc-400">Zohurul Hoque</span>
+                </p>
+              )}
+              {selectedLang === 'ms' && (
+                <p className="text-center text-xs text-zinc-500 mt-3">
+                  Malay translation by <span className="text-zinc-400">Abdullah Muhammad Basmeih</span>
+                </p>
+              )}
             </header>
 
             <main className="flex flex-col items-center w-full lg:px-8 px-1 lg:py-6 pt-4 my-0">
@@ -715,7 +1058,7 @@ export default function Home() {
                 <div className="relative w-full">
                   <input
                     type="text"
-                    placeholder="Search Text Patterns . . ."
+                    placeholder={t('searchPlaceholder')}
                     className="w-full p-2 rounded bg-[#1f2624] text-zinc-100 border border-[#3a403e] focus:outline-none focus:ring-2 focus:ring-[#144226] pr-10"
                     value={searchInput}
                     readOnly
@@ -776,7 +1119,7 @@ export default function Home() {
                   <div className='flex flex-row justify-between items-start sticky top-0 z-20 bg-[#1f2624] px-0 shadow-xl border-[#435e43] pt-3'>
                     <div>
                       <h1 className='font-bold ml-5 mt-0 mb-2 text-zinc-200 lg:text-base text-sm'>
-                        Search Results ( {searchedTopics.length ? `${searchedTopics.length} Patterns` : '-'} ) :
+                        {t('searchResultsLabel')} ( {searchedTopics.length ? t('searchResultsPatterns', searchedTopics.length) : t('searchResultsDash')} ) :
                       </h1>
                     </div>
                   </div>
@@ -784,7 +1127,7 @@ export default function Home() {
                   <div className="lg:p-4 p-3 text-zinc-200 lg:text-lg text-base">
                     {loadingSearch ? (
                       <div className="min-h-[8rem]">
-                        <p className="text-gray-500 pl-2">Loading results...</p>
+                        <p className="text-gray-500 pl-2">{t('loadingResults')}</p>
                       </div>
                     ) : searchedTopics.length > 0 ? (
                       <>
@@ -846,7 +1189,7 @@ export default function Home() {
                       </>
                     ) : (
                       <div className="min-h-[8rem]" >
-                        <p className="text-gray-500">Search for patterns using the arabic keyboard below</p>
+                        <p className="text-gray-500">{t('searchHint')}</p>
                       </div>
                     )}
                   </div>
@@ -864,18 +1207,18 @@ export default function Home() {
               <div className="w-fit lg:min-w-[25rem] min-w-[21rem] py-4 px-10 rounded-md bg-[#232f28] h-fit lg:mt-6 lg:mb-2 mt-6 mb-0 shadow-xl">
                 <div className="flex flex-row items-center justify-center gap-5">
                   <h1 className='lg:text-xl text-lg text-center font-bold'>
-                    <span>Selected Pattern: </span>
+                    <span>{t('selectedPattern')} </span>
                     <span className="block sm:inline font-normal">
                       {  /* 'block' for small screens, 'inline' for larger screens */
                         selectedThematicContext
-                          ? selectedThematicContext.five_gram_text // Display the five-gram text
+                          ? selectedThematicContext.five_gram_text
                           : selectedThematicTopic
-                            ? selectedThematicTopic.four_gram_text // Display the four-gram text
+                            ? selectedThematicTopic.four_gram_text
                             : selectedSubTheme
-                              ? selectedSubTheme.tri_gram_text // Display the tri-gram text
+                              ? selectedSubTheme.tri_gram_text
                               : selectedTheme
-                                ? selectedTheme.bi_gram_text // Display the bi-gram text
-                                : "None"
+                                ? selectedTheme.bi_gram_text
+                                : t('selectedPatternNone')
                       }</span>
                   </h1>
 
@@ -940,25 +1283,62 @@ export default function Home() {
                   <div>
                     <h3 className="lg:text-left text-center font-julius-sans font-bold lg:text-xl text-lg py-1 text-zinc-300">
                       {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext
-                        ? "Corresponding Ayats"
+                        ? t('correspondingAyats')
                         : loadingAyats
-                          ? "Loading Ayats..."
-                          : `Corresponding Ayats ( Found: ${ayats.length} )`}
+                          ? t('loadingAyats')
+                          : t('correspondingAyatsFound', ayats.length)}
                     </h3>
-                    <p className="lg:text-left text-center lg:text-base text-sm pb-3">Select ayat to view details</p>
+                    <div className="flex lg:flex-row flex-col lg:items-center items-start gap-3 pb-3">
+                      <p className="lg:text-base text-sm">{t('selectAyatHint')}</p>
+
+                      {/* Prev / Next ayat navigation */}
+                      {ayats.length > 0 && (
+                        <div className="flex items-center gap-2 lg:ml-auto">
+                          <button
+                            onClick={() => {
+                              if (selectedAyatIndex === null || selectedAyatIndex === 0) return;
+                              setSelectedAyatIndex(selectedAyatIndex - 1);
+                            }}
+                            disabled={selectedAyatIndex === null || selectedAyatIndex === 0}
+                            className="flex items-center gap-1 px-3 py-1 rounded bg-[#39413e] hover:bg-[#5b6763] disabled:opacity-30 disabled:cursor-not-allowed text-sm transition-colors"
+                          >
+                            <GrFormPrevious className="text-lg" /> {t('back')}
+                          </button>
+
+                          <span className="text-zinc-400 text-sm min-w-[4rem] text-center">
+                            {selectedAyatIndex !== null
+                              ? `${selectedAyatIndex + 1} / ${ayats.length}`
+                              : `- / ${ayats.length}`}
+                          </span>
+
+                          <button
+                            onClick={() => {
+                              const nextIdx = selectedAyatIndex === null ? 0 : selectedAyatIndex + 1;
+                              if (nextIdx >= ayats.length) return;
+                              setSelectedAyatIndex(nextIdx);
+                            }}
+                            disabled={selectedAyatIndex !== null && selectedAyatIndex >= ayats.length - 1}
+                            className="flex items-center gap-1 px-3 py-1 rounded bg-[#39413e] hover:bg-[#5b6763] disabled:opacity-30 disabled:cursor-not-allowed text-sm transition-colors"
+                          >
+                            {t('next')} <GrFormNext className="text-lg" />
+                          </button>
+                        </div>
+                      )}
+
+                    </div>
                     <div className="bg-[#1f2624] shadow-md rounded py-3">
-                      <div className="lg:px-4 px-3 lg:h-[25rem] h-[15rem] text-zinc-200 overflow-auto lg:text-lg text-base">
+                      <div ref={ayatListRef} className="lg:px-4 px-3 lg:h-[25rem] h-[15rem] text-zinc-200 overflow-auto lg:text-lg text-base">
                         <div className="lg:py-2 lg:px-3">
                           <div className="">
-                            <p className="font-bold lg:text-xl text-sm">Ayats</p>
+                            <p className="font-bold lg:text-xl text-sm">{t('ayatsHeading')}</p>
                             <hr className="w-full my-1 border-[#4a504e]"></hr>
                             <ul className=''>
                               {!selectedTheme && !selectedSubTheme && !selectedThematicTopic && !selectedThematicContext ? (
-                                <p className="text-zinc-400 py-2">Select a text pattern or n-word repeating text pattern to view Ayats.</p>
+                                <p className="text-zinc-400 py-2">{t('selectPatternHint')}</p>
                               ) : loadingAyats ? (
-                                <p className="text-zinc-400 py-2">Loading Ayats...</p>
+                                <p className="text-zinc-400 py-2">{t('loadingAyatsList')}</p>
                               ) : ayats.length === 0 ? (
-                                <p className="text-zinc-400 py-2">No Ayats found for the selected topic.</p>
+                                <p className="text-zinc-400 py-2">{t('noAyatsFound')}</p>
                               ) : (
                                 ayats.map((ayat, idx) => {
                                   // Check if ayat is an object and it has the expected properties
@@ -966,15 +1346,13 @@ export default function Home() {
                                     return (
                                       <div
                                         key={ayat.id}
-                                        onClick={() => {
-                                          setAyatDetails(null); // Clear before loading new
-                                          setSelectedAyatIndex(prev => (prev === idx ? null : idx));
-                                        }}
+                                        ref={el => ayatItemRefs.current[idx] = el}
+                                        onClick={() => handleAyatClick(ayat, idx)}
                                         className={`cursor-pointer rounded ${selectedAyatIndex === idx ? "bg-[#2c3533] text-green-200" : ""}`}
                                       >
                                         <li className={`py-2 font-arabic lg:text-xl text-sm ${selectedAyatIndex !== idx ? "text-zinc-200" : ""}`}>
                                           <span className="text-zinc-400 mr-2">(Surah-{ayat.surah_id} | Ayat-{ayat.ayat_no}) </span> {ayat.ayat_arabic_text}
-                                          <p className="text-zinc-400 mr-2">{ayat.ayat_english_text}</p>
+                                          <p className="text-zinc-400 mr-2">{ayat.ayat_translation}</p>
                                         </li>
                                         <hr className="w-full my-1 border-[#3a403e]" />
                                       </div>
@@ -983,7 +1361,7 @@ export default function Home() {
                                     // If ayat doesn't have the required properties, display a fallback message
                                     return (
                                       <div key={idx} className="py-2 font-arabic lg:text-xl text-sm text-zinc-400">
-                                        Invalid Ayat Data
+                                        {t('invalidAyat')}
                                       </div>
                                     );
                                   }
@@ -1003,38 +1381,38 @@ export default function Home() {
                   <div className="">
                     <div className="flex flex-row justify-center lg:gap-4 gap-5">
                       <div className='lg:w-[300px] w-[100px]'>
-                        <p className="lg:text-lg text-sm font-bold text-right">After</p>
+                        <p className="lg:text-lg text-sm font-bold text-right">{t('after')}</p>
                         <p className="lg:text-lg text-sm font-arabic text-right">
                           {selectedAyatIndex !== null
-                            ? loadingDetails
-                              ? "Loading..."
-                              : ayatDetails?.after || "-"
+                            ? displayDetails
+                              ? displayDetails.after
+                              : t('loading')
                             : "-"}
                         </p>
                       </div>
                       <div className='lg:w-[300px] w-[100px] border-x-2 border-[#3a403e]'>
-                        <p className="lg:text-lg text-sm text-center font-bold">Selected Pattern</p>
+                        <p className="lg:text-lg text-sm text-center font-bold">{t('selectedPatternLabel')}</p>
                         <p className="lg:text-lg text-sm text-center font-arabic text-green-200">
-                          <span className="block sm:inline font-normal">{  /* 'block' for small screens, 'inline' for larger screens */
+                          <span className="block sm:inline font-normal">{
                             selectedThematicContext
-                              ? selectedThematicContext.five_gram_text // Display the five-gram text
+                              ? selectedThematicContext.five_gram_text
                               : selectedThematicTopic
-                                ? selectedThematicTopic.four_gram_text // Display the four-gram text
+                                ? selectedThematicTopic.four_gram_text
                                 : selectedSubTheme
-                                  ? selectedSubTheme.tri_gram_text // Display the tri-gram text
+                                  ? selectedSubTheme.tri_gram_text
                                   : selectedTheme
-                                    ? selectedTheme.bi_gram_text // Display the bi-gram text
-                                    : "None"
+                                    ? selectedTheme.bi_gram_text
+                                    : t('selectedPatternNone')
                           }</span>
                         </p>
                       </div>
                       <div className='lg:w-[300px] w-[100px]'>
-                        <p className="lg:text-lg text-sm font-bold">Before</p>
+                        <p className="lg:text-lg text-sm font-bold">{t('before')}</p>
                         <p className="lg:text-lg text-sm font-arabic">
                           {selectedAyatIndex !== null
-                            ? loadingDetails
-                              ? "Loading..."
-                              : ayatDetails?.before || "-"
+                            ? displayDetails
+                              ? displayDetails.before
+                              : t('loading')
                             : "-"}
                         </p>
                       </div>
@@ -1046,69 +1424,78 @@ export default function Home() {
               </div>
 
               {/* Details of Selected Ayat */}
+              {surahAyats.length > 0 && surahAyatIndex !== null && (
+                <div className='flex flex-col items-center w-full'>
+                  <div className="flex items-center gap-3 mb-4">
+                  <button
+                    onClick={goToPrevAyat}
+                    disabled={surahAyatIndex === 0}
+                    className="flex items-center gap-1 px-3 py-1 rounded bg-[#39413e] hover:bg-[#5b6763] disabled:opacity-30"
+                  >
+                    <GrFormPrevious /><p className='font-sans'>{t('backAyat')}</p>
+                  </button>
+
+                  <span className="text-sm text-zinc-400">
+                    {`${surahAyatIndex + 1} / ${surahAyats.length}`}
+                  </span>
+
+                  <button
+                    onClick={goToNextAyat}
+                    disabled={surahAyatIndex === surahAyats.length - 1}
+                    className="flex items-center gap-1 px-3 py-1 rounded bg-[#39413e] hover:bg-[#5b6763] disabled:opacity-30"
+                  >
+                    <p className='font-sans'>{t('nextAyat')}</p><GrFormNext />
+                  </button>
+                  </div>
+                  <button onClick={handleReset} className="px-32 py-1 rounded border border-[#39413e] hover:bg-[#5b6763] disabled:opacity-30 text-sm transition-colors">
+                    <p className='font-sans'>{t('resetAyat')}</p>
+                  </button>
+                </div>
+              )}
+
               <div className="w-full lg:mb-8 mb-6">
                 <div className="items-start">
                   <h1 className="lg:text-xl text-lg font-julius-sans font-bold lg:pt-3 pt-1">
-                    Details of selected Ayat
+                    {t('detailsHeading')}
                   </h1>
 
                   <hr className="w-full lg:mt-3 mt-2 lg:mb-6 mb-5 border-zinc-500" />
 
                   <div className="grid gap-y-2">
                     <p className="lg:text-lg text-sm">
-                      <b className="font-julius-sans">Selected Ayat : </b>
-                      {selectedAyatIndex !== null && ayats[selectedAyatIndex] ? (
-                        <span className="font-arabic">{ayats[selectedAyatIndex]?.ayat_arabic_text}</span>
+                      <b className="font-julius-sans">{t('selectedAyatLabel')}</b>
+                      {selectedAyatIndex !== null && currentAyat ? (
+                        <span className="font-arabic">{currentAyat.ayat_arabic_text}</span>
                       ) : (
                         <span className="font-julius-sans"></span>
                       )}
                     </p>
                     <p className="lg:text-lg text-sm font-julius-sans">
-                      <b>Surah Name : </b>
+                      <b>{t('surahName')}</b>
                       {selectedAyatIndex !== null
                         ? loadingDetails
-                          ? "Loading..."
-                          : ayatDetails?.surahName || ""
+                          ? displayDetails?.surahName || t('loading')
+                          : displayDetails?.surahName || ""
                         : ""}
                     </p>
                     <p className="lg:text-lg text-sm font-julius-sans">
-                      <b>Ayat Number : </b>
+                      <b>{t('ayatNumber')}</b>
                       {selectedAyatIndex !== null
                         ? loadingDetails
-                          ? "Loading..."
-                          : ayatDetails?.ayatNumber || ""
+                          ? displayDetails?.ayatNumber || t('loading')
+                          : displayDetails?.ayatNumber || ""
                         : ""}
                     </p>
                     <p className="lg:text-lg text-sm font-julius-sans">
-                      <b>Ayat Translation : </b>
+                      <b>{t('ayatTranslation')}</b>
                       {selectedAyatIndex !== null
                         ? loadingDetails
-                          ? "Loading..."
-                          : ayatDetails?.translation || ""
+                          ? displayDetails?.translation || t('loading')
+                          : displayDetails?.translation || ""
                         : ""}
                     </p>
                   </div>
                 </div>
-
-                {/* After, Pattern, Before Section Details*/}
-                {/* <div className="w-full grid lg:grid-cols-3 border-2 border-[#3a403e] rounded-lg p-4 gap-4">
-
-                  <div className='border-r-2 border-[#3a403e]'>
-                    <h1 className='text-center'>After</h1>
-                    <hr className="w-[90%] mx-auto lg:mt-3 mt-2 lg:mb-6 mb-5 border-zinc-500" />
-                  </div>
-
-                  <div>
-                    <h1 className='text-center'>Pattern</h1>
-                    <hr className="w-full mx-auto lg:mt-3 mt-2 lg:mb-6 mb-5 border-zinc-500" />
-                  </div>
-
-                  <div className='border-l-2 border-[#3a403e]'>
-                    <h1 className='text-center'>Before</h1>
-                    <hr className="w-[90%] mx-auto lg:mt-3 mt-2 lg:mb-6 mb-5 border-zinc-500" />
-                  </div>
-
-                </div> */}
 
               </div>
 

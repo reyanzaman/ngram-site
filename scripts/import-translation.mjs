@@ -1,11 +1,19 @@
 import { neon } from '@neondatabase/serverless';
 import { readFileSync } from 'fs';
 import { XMLParser } from 'fast-xml-parser';
+import { decode } from 'html-entities';
 
 // ← Paste your Neon connection string here (from Neon dashboard → Connection Details)
 const sql = neon('postgresql://thematic-search_owner:npg_lrwet7z0iQSF@ep-wispy-tree-a1hm4ccv-pooler.ap-southeast-1.aws.neon.tech/thematic-search?sslmode=require&channel_binding=require');
 
-const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '' });
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: '',
+  htmlEntities: false,        // ← disable HTML entity processing
+  processEntities: false,     // ← disable entity expansion entirely
+  allowBooleanAttributes: true,
+  parseAttributeValue: false,
+});
 
 async function importTranslation(xmlPath, langCode, translator) {
   console.log(`\nImporting ${xmlPath} as lang=${langCode}, translator=${translator}`);
@@ -22,7 +30,7 @@ async function importTranslation(xmlPath, langCode, translator) {
 
     for (const aya of ayas) {
       const ayaIndex = parseInt(aya.index);
-      const text = aya.text;
+      const text = decode(aya.text);
 
       // Find the ayat_id from your DB
       const rows = await sql`
@@ -50,7 +58,8 @@ async function importTranslation(xmlPath, langCode, translator) {
 }
 
 // Run both files
-await importTranslation('./scripts/translations/ar.jalalayn.xml', 'ar', 'jalalayn');
-await importTranslation('./scripts/translations/bn.hoque.xml', 'bn', 'hoque');
+// await importTranslation('./scripts/translations/ar.jalalayn.xml', 'ar', 'jalalayn');
+// await importTranslation('./scripts/translations/bn.hoque.xml', 'bn', 'hoque');
+await importTranslation('./scripts/translations/ms.basmeih.xml', 'ms', 'basmeih');
 
 console.log('\n✅ All done!');
