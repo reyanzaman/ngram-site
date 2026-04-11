@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { GrFormNext, GrFormPrevious } from "react-icons/gr";
 import ArabicKeyboard from '@/app/utils/keyboard';
-import { stemArabicPhrase } from '@/app/utils/arabicStemmer';
-import next from 'next';
 
 const translations = {
   en: {
@@ -364,8 +362,7 @@ export default function Home() {
       const query = debouncedSearch;
 
       try {
-        const stemmedQuery = stemArabicPhrase(query);
-        const results = await fetchSearchResults(stemmedQuery, { signal: ac.signal });
+        const results = await fetchSearchResults(query, { signal: ac.signal });
 
         // optional tiny delay to smooth UI
         await new Promise(r => setTimeout(r, 150));
@@ -1040,7 +1037,7 @@ export default function Home() {
               {/* Translator credit */}
               {selectedLang === 'bn' && (
                 <p className="text-center text-xs text-zinc-500 mt-3">
-                  Bengali translation by <span className="text-zinc-400">Zohurul Hoque</span>
+                  Bengali translation by <span className="text-zinc-400">Muhiuddin Khan</span>
                 </p>
               )}
               {selectedLang === 'ms' && (
@@ -1352,7 +1349,7 @@ export default function Home() {
                                       >
                                         <li className={`py-2 font-arabic lg:text-xl text-sm ${selectedAyatIndex !== idx ? "text-zinc-200" : ""}`}>
                                           <span className="text-zinc-400 mr-2">(Surah-{ayat.surah_id} | Ayat-{ayat.ayat_no}) </span> {ayat.ayat_arabic_text}
-                                          <p className="text-zinc-400 mr-2">{ayat.ayat_translation}</p>
+                                          <p className="text-zinc-400 mr-2">{ayat.ayat_english_text}</p>
                                         </li>
                                         <hr className="w-full my-1 border-[#3a403e]" />
                                       </div>
