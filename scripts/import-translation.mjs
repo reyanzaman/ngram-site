@@ -58,9 +58,9 @@ async function importTranslation(xmlPath, langCode, translator) {
 }
 
 // Run both files
-await importTranslation('./scripts/translations/ar.jalalayn.xml', 'ar', 'jalalayn');
+// await importTranslation('./scripts/translations/ar.jalalayn.xml', 'ar', 'jalalayn');
 // await importTranslation('./scripts/translations/bn.hoque.xml', 'bn', 'hoque');
-await importTranslation('./scripts/translations/bn.khan.xml', 'bn', 'khan');
-await importTranslation('./scripts/translations/ms.basmeih.xml', 'ms', 'basmeih');
+// await importTranslation('./scripts/translations/bn.khan.xml', 'bn', 'khan');
+// await importTranslation('./scripts/translations/ms.basmeih.xml', 'ms', 'basmeih');
 
 console.log('\n✅ All done!');

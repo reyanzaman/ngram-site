@@ -512,6 +512,30 @@ export default function Home() {
     }
   }, [selectedAyatIndex]);
 
+  // When a search result wants the bi-gram list to scroll to a specific id,
+  // scroll the element stored in biGramRefs and then clear the pending id.
+  useLayoutEffect(() => {
+    if (!pendingScrollId) return;
+
+    const id = String(pendingScrollId);
+    const el = biGramRefs.current[id];
+
+    if (el && el.scrollIntoView) {
+      // Use smooth behavior and nearest block to keep UX consistent
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      // Optionally give keyboard focus so it's visible for a11y
+      try {
+        el.focus?.();
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // Clear the pending id so we only scroll once per request
+    setPendingScrollId(null);
+  }, [pendingScrollId]);
+
   // Toggle Bi Gram
   const toggleSubThemes = (subIndex, theme) => {
     const isSameIndex = subOpenIndex === subIndex;
@@ -745,6 +769,7 @@ export default function Home() {
                 <li key={index} className="py-1">
                   <div
                     ref={el => biGramRefs.current[String(theme.id)] = el}
+                    tabIndex={-1}
                     className={`cursor-pointer hover:bg-[#28302d] rounded px-2 ${subOpenIndex === index ? "text-green-200" : "text-gray-200"}`}
                     onClick={() => toggleSubThemes(index, theme)}
                   >
@@ -1137,8 +1162,9 @@ export default function Home() {
                                   className="cursor-pointer py-2 px-3 border border-[#2f3a35] bg-[#161f1a] hover:bg-[#232f28] transition-colors duration-200"
                                   onClick={() => {
                                     const matchedIndex = primaryThemes.findIndex(t => String(t.id) === String(topic.id));
+                                    const matchedTheme = matchedIndex !== -1 ? primaryThemes[matchedIndex] : topic;
                                     setGramState('bi-gram');
-                                    toggleSubThemes(matchedIndex, topic);
+                                    toggleSubThemes(matchedIndex, matchedTheme);
                                     setKeyboardOpen(false);
 
                                     // Only on desktop, set pendingScrollId (triggers useLayoutEffect)
